@@ -23,6 +23,7 @@ export default function Home() {
 
   // Last submitted wish (for the user's crane interaction)
   const [lastWish, setLastWish] = useState<string | null>(null)
+  const [craneColor, setCraneColor] = useState('#e0e0e0') // Default Grey
 
   // Check Local Storage on Mount
   useEffect(() => {
@@ -61,6 +62,7 @@ export default function Home() {
     // 1. Save to Firestore (Async - don't await blocking animation)
     addDoc(collection(db, 'wishes'), {
       message: message,
+      color: craneColor,
       timestamp: Date.now()
     }).catch(err => console.error("Error saving wish:", err)) // Keep catch for error logging
 
@@ -164,6 +166,7 @@ export default function Home() {
           isReleasing={isReleasing}
           isSettling={isSettling}
           lastWish={lastWish}
+          craneColor={craneColor}
         />
       </div>
 
@@ -205,7 +208,11 @@ export default function Home() {
 
       {/* WISH INPUT */}
       {mode === 'WISH' && (
-        <WishInput onSend={handleWishSend} />
+        <WishInput
+          onSend={handleWishSend}
+          onColorChange={setCraneColor}
+          selectedColor={craneColor}
+        />
       )}
 
       {/* VOID MODE INSTRUCTIONS - Centered */}

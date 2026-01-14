@@ -31,6 +31,11 @@ export interface AppConfig {
         releaseDelay: number
         settleTime: number
     }
+    craneColors: {
+        id: string
+        color: string
+        label: string
+    }[]
 }
 
 const DEFAULT_CONFIG: AppConfig = {
@@ -48,7 +53,13 @@ const DEFAULT_CONFIG: AppConfig = {
     appTimings: {
         releaseDelay: 2500,
         settleTime: 1800
-    }
+    },
+    craneColors: [
+        { id: 'unsaid', color: '#e0e0e0', label: 'The Unsaid' }, // Grey
+        { id: 'regret', color: '#7a8fa3', label: 'The Regret' }, // Muted Blue
+        { id: 'yearning', color: '#d4b4b4', label: 'The Yearning' }, // Blush Pink
+        { id: 'closure', color: '#333333', label: 'The Closure' } // Charcoal
+    ]
 }
 
 // -- CONTEXT --
@@ -77,7 +88,8 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
                     ...data,
                     instructions: { ...prev.instructions, ...data.instructions },
                     appTimings: { ...prev.appTimings, ...data.appTimings },
-                    introSequence: data.introSequence || prev.introSequence
+                    introSequence: data.introSequence || prev.introSequence,
+                    craneColors: data.craneColors || prev.craneColors
                 }))
             } else {
                 console.log("No config found, using defaults. Creating doc...")

@@ -56,7 +56,7 @@ interface VoidContentProps {
 }
 
 // -- ANIMATED CRANE COMPONENT --
-function Crane({ i, wish, geometry, position, rotation, baseScale, onSelectWish }: {
+function Crane({ i, wish, geometry, position, rotation, baseScale, onSelectWish, color = '#ffffff' }: {
     i: number
     wish: string
     geometry: THREE.BufferGeometry
@@ -64,6 +64,7 @@ function Crane({ i, wish, geometry, position, rotation, baseScale, onSelectWish 
     rotation: [number, number, number]
     baseScale: number
     onSelectWish?: (wish: string | null) => void
+    color?: string
 }) {
     const meshRef = useRef<THREE.Mesh>(null)
     const [hovered, setHovered] = useState(false)
@@ -94,8 +95,11 @@ function Crane({ i, wish, geometry, position, rotation, baseScale, onSelectWish 
     })
 
     const msg = wish.toLowerCase()
-    const isRed = msg.includes('sorry') || msg.includes('love') || msg.includes('regret') || msg.includes('miss')
-    const color = isRed ? "#ffa0a0" : "#ffffff"
+
+    // Use stored color if provided, otherwise default fallback logic or just white
+    // Previously we had "isRed" logic - we can keep it as a fallback if color is missing?
+    // Actually, let's trust the prop, but fallback to white if undefined.
+    const finalColor = color
 
     return (
         <mesh
@@ -120,7 +124,7 @@ function Crane({ i, wish, geometry, position, rotation, baseScale, onSelectWish 
             }}
         >
             <meshStandardMaterial
-                color={color}
+                color={finalColor}
                 flatShading
                 roughness={0.6}
                 metalness={0.1}
@@ -133,13 +137,16 @@ function Crane({ i, wish, geometry, position, rotation, baseScale, onSelectWish 
 }
 
 export default function VoidContent({ onSelectWish }: VoidContentProps) {
-    const [wishes, setWishes] = useState<string[]>([])
+    const [wishes, setWishes] = useState<{ message: string, color?: string }[]>([])
 
     // Connect to Firestore (Realtime)
     useEffect(() => {
         const q = query(collection(db, 'wishes'), orderBy('timestamp', 'desc'), limit(1000))
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const data = snapshot.docs.map(doc => doc.data().message as string)
+            const data = snapshot.docs.map(doc => {
+                const d = doc.data()
+                return { message: d.message as string, color: d.color as string }
+            })
             setWishes(data)
         })
         return () => unsubscribe()
@@ -185,7 +192,7 @@ export default function VoidContent({ onSelectWish }: VoidContentProps) {
 
     return (
         <group>
-            {wishes.map((wish, i) => {
+            {wishes.map((item, i) => {
                 // Bounds check
                 if (i * 3 >= positions.length) return null
 
@@ -197,12 +204,13 @@ export default function VoidContent({ onSelectWish }: VoidContentProps) {
                     <Crane
                         key={i}
                         i={i}
-                        wish={wish}
+                        wish={item.message}
                         geometry={geometry}
                         position={pos}
                         rotation={rot}
                         baseScale={baseScale}
                         onSelectWish={onSelectWish}
+                        color={item.color || '#e0e0e0'} // Default fallback if old data
                     />
                 )
             })}

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { collection, onSnapshot, deleteDoc, doc, updateDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useConfig, AppConfig, IntroStep } from '@/components/ConfigContext'
-import { Trash2, Plus, Save, Clock, Type, Settings, LayoutGrid, List } from 'lucide-react'
+import { Trash2, Plus, Save, Clock, Type, Settings, LayoutGrid, List, Palette } from 'lucide-react'
 import { clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 
@@ -450,9 +450,79 @@ export default function AdminPage() {
                                             <span className="text-xs text-gray-400">ms</span>
                                         </div>
                                     </div>
+                                    <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-gray-100">
+                                        <label className="text-sm font-bold text-gray-500 uppercase tracking-wide">Settling Time</label>
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="number"
+                                                value={localConfig.appTimings.settleTime}
+                                                onChange={(e) => setLocalConfig({ ...localConfig, appTimings: { ...localConfig.appTimings, settleTime: parseInt(e.target.value) } })}
+                                                className="w-20 bg-gray-50 rounded-lg px-2 py-1 text-right font-mono font-bold text-gray-900 outline-none focus:bg-white focus:ring-1 ring-gray-200"
+                                            />
+                                            <span className="text-xs text-gray-400">ms</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* EMOTIONAL PALETTE EDITOR */}
+                            <section className="col-span-1 md:col-span-2 bg-white/60 backdrop-blur-sm rounded-[2.5rem] p-8 shadow-lg border border-white/50">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="p-2 bg-gray-200 rounded-lg text-gray-700"><Palette size={18} /></div>
+                                    <h2 className="text-xl font-serif italic text-gray-900">Emotional Palette</h2>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    {localConfig.craneColors?.map((colorItem, index) => (
+                                        <div key={colorItem.id} className="bg-white p-4 rounded-xl border border-gray-100 flex flex-col gap-3">
+                                            <div className="flex items-center gap-3">
+                                                <div
+                                                    className="w-10 h-10 rounded-full border border-gray-200 shadow-sm"
+                                                    style={{ backgroundColor: colorItem.color }}
+                                                />
+                                                <input
+                                                    type="color"
+                                                    value={colorItem.color}
+                                                    onChange={(e) => {
+                                                        const newColors = [...(localConfig.craneColors || [])]
+                                                        newColors[index] = { ...newColors[index], color: e.target.value }
+                                                        setLocalConfig({ ...localConfig, craneColors: newColors })
+                                                    }}
+                                                    className="w-8 h-8 cursor-pointer opacity-0 absolute"
+                                                    style={{ width: '40px', height: '40px' }} // Overlay on preview
+                                                />
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] uppercase font-bold text-gray-400">Color Hex</span>
+                                                    <input
+                                                        type="text"
+                                                        value={colorItem.color}
+                                                        onChange={(e) => {
+                                                            const newColors = [...(localConfig.craneColors || [])]
+                                                            newColors[index] = { ...newColors[index], color: e.target.value }
+                                                            setLocalConfig({ ...localConfig, craneColors: newColors })
+                                                        }}
+                                                        className="font-mono text-xs font-bold text-gray-800 outline-none w-20"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col gap-1">
+                                                <label className="text-[10px] uppercase font-bold text-gray-400">Meaning</label>
+                                                <input
+                                                    type="text"
+                                                    value={colorItem.label}
+                                                    onChange={(e) => {
+                                                        const newColors = [...(localConfig.craneColors || [])]
+                                                        newColors[index] = { ...newColors[index], label: e.target.value }
+                                                        setLocalConfig({ ...localConfig, craneColors: newColors })
+                                                    }}
+                                                    className="w-full text-sm font-medium text-gray-900 border-b border-gray-200 focus:border-gray-900 outline-none py-1 transition-colors"
+                                                />
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </section>
                         </div>
+
 
                     </div>
                 )}

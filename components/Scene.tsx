@@ -15,7 +15,8 @@ interface SceneProps {
     isReleasing?: boolean
     isSettling?: boolean
     lastWish?: string | null
-    onComplete?: () => void
+    onComplete?: () => void // For Intro completion
+    craneColor?: string
 }
 
 function CameraController({ mode, isReleasing }: { mode: string, isReleasing?: boolean }) {
@@ -60,7 +61,7 @@ function CameraController({ mode, isReleasing }: { mode: string, isReleasing?: b
     return null
 }
 
-export default function Scene({ mode, onFoldComplete, onSelectWish, onFoldProgress, isReleasing, isSettling, lastWish }: SceneProps) {
+export default function Scene({ mode, onFoldComplete, onSelectWish, onFoldProgress, isReleasing, isSettling, lastWish, craneColor = '#e0e0e0' }: SceneProps) {
     return (
         <div className="fixed inset-0 w-screen h-screen bg-[#f4f1ea]">
             <Canvas shadows camera={{ position: [0, 2, 4], fov: 45 }}>
@@ -90,6 +91,7 @@ export default function Scene({ mode, onFoldComplete, onSelectWish, onFoldProgre
                         isReleasing={isReleasing}
                         lastWish={lastWish}
                         onSelectWish={onSelectWish}
+                        craneColor={craneColor}
                     />
                 )}
 

@@ -11,9 +11,10 @@ interface FoldingStageProps {
     isReleasing?: boolean
     lastWish?: string | null
     onSelectWish?: (wish: string | null) => void
+    craneColor?: string
 }
 
-export default function FoldingStage({ onComplete, onDragStart, forceFinish, onProgressChange, isReleasing, lastWish, onSelectWish }: FoldingStageProps) {
+export default function FoldingStage({ onComplete, onDragStart, forceFinish, onProgressChange, isReleasing, lastWish, onSelectWish, craneColor }: FoldingStageProps) {
     const [step, setStep] = useState(0) // 0: Square, 1: Triangle, 2: Diamond, 3: BirdBase, 4: Crane
     const [progress, setProgress] = useState(0)
     const [isComplete, setIsComplete] = useState(false)
@@ -161,5 +162,5 @@ export default function FoldingStage({ onComplete, onDragStart, forceFinish, onP
     }, [isComplete, progress, step, onComplete, onDragStart, isAutoFolding])
 
     // Pure 3D content - no Html overlay (handled by parent page.tsx now)
-    return <PaperFoldingEngine step={step} progress={progress} isReleasing={isReleasing} />
+    return <PaperFoldingEngine step={step} progress={progress} isReleasing={isReleasing} color={craneColor} />
 }

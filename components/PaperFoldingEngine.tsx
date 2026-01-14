@@ -253,11 +253,23 @@ interface PaperSheetProps {
     isReleasing?: boolean
     lastWish?: string | null
     onSelectWish?: (wish: string | null) => void
+    color?: string
 }
 
-export function PaperFoldingEngine({ step, progress, isReleasing, lastWish, onSelectWish }: PaperSheetProps) {
+export function PaperFoldingEngine({ step, progress, isReleasing, lastWish, onSelectWish, color = '#e0e0e0' }: PaperSheetProps) {
     const meshRef = useRef<THREE.Mesh>(null)
     const groupRef = useRef<THREE.Group>(null)
+
+    // Dynamic Material based on color prop
+    const material = useMemo(() => {
+        return new THREE.MeshStandardMaterial({
+            color: new THREE.Color(color),
+            side: THREE.DoubleSide,
+            roughness: 0.6,
+            metalness: 0.1,
+            flatShading: true,
+        })
+    }, [color])
 
     const geometry = useMemo(() => {
         const geo = new THREE.BufferGeometry()
@@ -372,7 +384,7 @@ export function PaperFoldingEngine({ step, progress, isReleasing, lastWish, onSe
 
     return (
         <group ref={groupRef} scale={0.85} rotation={[0, Math.PI / 4, 0]}>
-            <mesh ref={meshRef} geometry={geometry} material={PAPER_MATERIAL} />
+            <mesh ref={meshRef} geometry={geometry} material={material} />
         </group>
     )
 }
