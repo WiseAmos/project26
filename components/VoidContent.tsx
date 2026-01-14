@@ -78,8 +78,8 @@ export default function VoidContent({ onSelectWish }: VoidContentProps) {
 
         for (let i = 0; i < COUNT; i++) {
             // SPHERICAL DISTRIBUTION with HOLE (Donut/Shell)
-            // Radius between 15 and SPREAD/2
-            const radius = 15 + Math.random() * (SPREAD - 15)
+            // Radius between 5 and SPREAD/2 for closer spawning
+            const radius = 5 + Math.random() * (SPREAD - 5)
             const theta = Math.random() * Math.PI * 2
             const phi = Math.acos(2 * Math.random() - 1)
 

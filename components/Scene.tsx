@@ -8,12 +8,13 @@ import FoldingContent from './FoldingStage'
 import VoidContent from './VoidContent'
 
 interface SceneProps {
-    mode: 'INTRO' | 'FOLDING' | 'WISH' | 'VOID'
+    mode: 'LOADING' | 'INTRO' | 'FOLDING' | 'WISH' | 'VOID'
     onFoldComplete?: () => void
     onSelectWish?: (wish: string | null) => void
     onFoldProgress?: (step: number, progress: number, isComplete: boolean) => void
     isReleasing?: boolean
     isSettling?: boolean
+    lastWish?: string | null
 }
 
 function CameraController({ mode, isReleasing }: { mode: string, isReleasing?: boolean }) {
@@ -46,7 +47,7 @@ function CameraController({ mode, isReleasing }: { mode: string, isReleasing?: b
 
         prevMode.current = mode
 
-        if (mode === 'FOLDING' || mode === 'WISH') {
+        if (mode === 'FOLDING' || mode === 'WISH' || mode === 'LOADING' || mode === 'INTRO') {
             targetPos.current.set(0, 2, 4)
         } else {
             targetPos.current.set(0, 2, 4)
@@ -79,7 +80,7 @@ export default function Scene({ mode, onFoldComplete, onSelectWish, onFoldProgre
 
                 {/* USER CRANE (Visible during folding, wish input, AND void/gallery) 
                     Kept in VOID so the flown-away crane remains visible in the distance */}
-                {(mode === 'INTRO' || mode === 'FOLDING' || mode === 'WISH' || mode === 'VOID') && (
+                {(mode === 'INTRO' || mode === 'FOLDING' || mode === 'WISH' || mode === 'VOID' || mode === 'LOADING') && (
                     <FoldingContent
                         key="folding-stage"
                         onComplete={onFoldComplete}

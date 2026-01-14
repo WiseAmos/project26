@@ -1,7 +1,6 @@
-'use client'
-
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import gsap from 'gsap'
+import { useConfig } from './ConfigContext'
 
 interface IntroProps {
     onComplete: () => void
@@ -10,12 +9,16 @@ interface IntroProps {
 
 export default function IntroOverlay({ onComplete, onGallery }: IntroProps) {
     const containerRef = useRef<HTMLDivElement>(null)
-    const textRef1 = useRef<HTMLParagraphElement>(null)
-    const textRef2 = useRef<HTMLParagraphElement>(null)
-    const textRef3 = useRef<HTMLParagraphElement>(null)
-    const textRef4 = useRef<HTMLParagraphElement>(null)
+    const textsRef = useRef<(HTMLParagraphElement | null)[]>([])
+    const { config } = useConfig()
+    const { introSequence } = config
 
     useEffect(() => {
+        if (!introSequence || introSequence.length === 0) {
+            onComplete()
+            return
+        }
+
         const tl = gsap.timeline({
             onComplete: () => {
                 // Fade out the black container
@@ -28,30 +31,48 @@ export default function IntroOverlay({ onComplete, onGallery }: IntroProps) {
             }
         })
 
-        // Initial Set
-        gsap.set([textRef1.current, textRef2.current, textRef3.current, textRef4.current], { autoAlpha: 0, y: 20 })
+        // Initial Set: Hide all texts
+        textsRef.current.forEach(el => {
+            if (el) gsap.set(el, { autoAlpha: 0, y: 20 })
+        })
 
-        // Sequence
-        // 0s: Legend...
-        tl.to(textRef1.current, { autoAlpha: 1, y: 0, duration: 2 })
-            .to(textRef1.current, { autoAlpha: 0, y: -20, duration: 1.5, delay: 1.5 })
+        // Build Sequence Dynamically
+        // We want them to overlap slightly? The original had `"-=0.5"`.
+        // Let's assume standard sequential for now, or use a fixed overlap.
+        // Or we can add an `overlap` field to config later. For now, hardcode small overlap.
 
-        // 3s: I am not...
-        tl.to(textRef2.current, { autoAlpha: 1, y: 0, duration: 2 }, "-=0.5")
-            .to(textRef2.current, { autoAlpha: 0, y: -20, duration: 1.5, delay: 1.5 })
+        introSequence.forEach((step, index) => {
+            const el = textsRef.current[index]
+            if (!el) return
 
-        // 6s: To grieve...
-        tl.to(textRef3.current, { autoAlpha: 1, y: 0, duration: 2 }, "-=0.5")
-            .to(textRef3.current, { autoAlpha: 0, y: -20, duration: 1.5, delay: 1.5 })
+            const position = index === 0 ? undefined : "-=0.5" // Overlap all except first
 
-        // 8s: To fold...
-        tl.to(textRef4.current, { autoAlpha: 1, y: 0, duration: 2 }, "-=0.5")
-            .to(textRef4.current, { autoAlpha: 0, y: -20, duration: 1.5, delay: 2 })
+            // Fade In
+            tl.to(el, {
+                autoAlpha: 1,
+                y: 0,
+                duration: step.duration
+            }, position)
+
+            // Hold then Fade Out
+            // The 'hold' in config usually implies "Stay Visible".
+            // My Plan said: Hold = Wait before fading out.
+            // Original: duration: 1.5 (fade out), delay: 1.5 (hold)
+            // So let's use step.hold as the DELAY before fade out starts.
+            // And use a standard short fade out time (e.g. 1.5s) or make it proportional?
+            // Let's use 1.5s as standard fade out for now.
+            tl.to(el, {
+                autoAlpha: 0,
+                y: -20,
+                duration: 1.5,
+                delay: step.hold
+            })
+        })
 
         return () => {
             tl.kill()
         }
-    }, [onComplete])
+    }, [introSequence, onComplete])
 
     return (
         <div
@@ -59,18 +80,21 @@ export default function IntroOverlay({ onComplete, onGallery }: IntroProps) {
             className="fixed inset-0 w-screen h-screen flex flex-col items-center justify-center bg-[#f4f1ea] z-[50] overflow-hidden"
         >
             <div className="relative w-full max-w-xl h-40 flex items-center justify-center text-[#333]">
-                <p ref={textRef1} className="absolute inset-0 flex items-center justify-center text-center text-lg md:text-2xl font-light tracking-wider opacity-0 px-4">
-                    Legend says that folding one thousand paper cranes grants a single wish.
-                </p>
-                <p ref={textRef2} className="absolute inset-0 flex items-center justify-center text-center text-xl md:text-3xl font-medium tracking-wide opacity-0 px-4">
-                    I am not folding for a wish.
-                </p>
-                <p ref={textRef3} className="absolute inset-0 flex items-center justify-center text-center text-xl md:text-3xl font-medium tracking-wide opacity-0 px-4">
-                    To grieve in silence is to drown.
-                </p>
-                <p ref={textRef4} className="absolute inset-0 flex items-center justify-center text-center text-2xl md:text-4xl font-bold tracking-widest uppercase opacity-0 px-4">
-                    To fold is to breathe.
-                </p>
+                {introSequence.map((step, i) => (
+                    <p
+                        key={i}
+                        ref={el => { textsRef.current[i] = el }}
+                        className={`absolute inset-0 flex items-center justify-center text-center px-4 opacity-0
+                            ${i === introSequence.length - 1
+                                ? "text-xl md:text-2xl font-bold tracking-widest uppercase"
+                                : "text-lg md:text-xl font-medium tracking-wide"
+                            }
+                            ${i === 0 ? "font-light tracking-wider text-base md:text-lg" : ""}
+                        `}
+                    >
+                        {step.text}
+                    </p>
+                ))}
             </div>
 
             <button

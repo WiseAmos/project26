@@ -8,10 +8,11 @@ import { db } from '@/lib/firebase'
 import { collection, addDoc } from 'firebase/firestore'
 
 export default function Home() {
-  const [mode, setMode] = useState<'INTRO' | 'FOLDING' | 'WISH' | 'VOID'>('INTRO')
+  const [mode, setMode] = useState<'LOADING' | 'INTRO' | 'FOLDING' | 'WISH' | 'VOID'>('LOADING')
   const [selectedWish, setSelectedWish] = useState<string | null>(null)
   const [showInstructions, setShowInstructions] = useState(true)
   const [hasInteracted, setHasInteracted] = useState(false)
+  const [isReturningUser, setIsReturningUser] = useState(false)
 
   // Folding progress state (from FoldingStage)
   const [foldStep, setFoldStep] = useState(0)
@@ -22,6 +23,34 @@ export default function Home() {
 
   // Last submitted wish (for the user's crane interaction)
   const [lastWish, setLastWish] = useState<string | null>(null)
+
+  // Check Local Storage on Mount
+  useEffect(() => {
+    const checkVisit = () => {
+      const lastVisit = localStorage.getItem('paper_cranes_last_visit')
+      const now = Date.now()
+
+      if (lastVisit) {
+        setIsReturningUser(true) // They have visited before
+        const daysSince = (now - parseInt(lastVisit)) / (1000 * 60 * 60 * 24)
+        if (daysSince < 14) {
+          // Returning user within 14 days -> Skip Intro
+          setMode('FOLDING')
+        } else {
+          // Has been a while -> Show Intro
+          setMode('INTRO')
+        }
+      } else {
+        // New user -> Show Intro
+        setMode('INTRO')
+      }
+
+      // Update visit time
+      localStorage.setItem('paper_cranes_last_visit', now.toString())
+    }
+
+    checkVisit()
+  }, [])
 
   const handleFoldComplete = () => {
     setMode('WISH')
@@ -146,22 +175,30 @@ export default function Home() {
         />
       )}
 
+      {/* VIEW GALLERY SHORTCUT (For Returning Users in Folding Stage) */}
+      {mode === 'FOLDING' && isReturningUser && (
+        <button
+          onClick={() => setMode('VOID')}
+          style={{ position: 'fixed', top: '2rem', right: '2rem', zIndex: 50 }}
+          className="group flex items-center gap-3 cursor-pointer bg-transparent border-none shadow-none outline-none p-0 m-0"
+        >
+          <span className="font-serif italic text-lg text-[#333]/60 group-hover:text-[#333] transition-colors duration-500">
+            view gallery
+          </span>
+          <div className="w-8 h-[1px] bg-[#333]/30 group-hover:w-12 group-hover:bg-[#333] transition-all duration-500"></div>
+        </button>
+      )}
+
       {/* FOLDING INSTRUCTIONS - DOM overlay (not drei Html) */}
       {mode === 'FOLDING' && !foldComplete && (
         <div
-          className="fixed inset-0 w-screen h-screen flex flex-col items-center justify-start pt-32 pointer-events-none"
+          className="fixed inset-0 w-screen h-screen flex flex-col items-center justify-start pt-24 pointer-events-none"
           style={{ zIndex: 10 }}
         >
           <div className="text-center">
             <p className="text-[#333] text-xs tracking-[0.3em] uppercase animate-pulse">
               {getFoldInstruction()}
             </p>
-            <div className="w-32 h-1 bg-black/10 mx-auto mt-4 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-[#333] transition-all duration-75"
-                style={{ width: `${foldProgress * 100}%` }}
-              />
-            </div>
           </div>
         </div>
       )}
@@ -174,13 +211,26 @@ export default function Home() {
       {/* VOID MODE INSTRUCTIONS - Centered */}
       {mode === 'VOID' && !selectedWish && showInstructions && (
         <div
-          className="fixed top-0 left-0 right-0 bottom-0 w-screen h-screen flex items-center justify-center pointer-events-none"
+          className="fixed bottom-12 left-1/2 -translate-x-1/2 pointer-events-none"
           style={{ zIndex: 20 }}
         >
-          <div className={`transition-opacity duration-1000 ${showInstructions ? 'opacity-100' : 'opacity-0'}`}>
-            <p className="text-[#333]/60 text-xs md:text-sm tracking-wide text-center px-6 py-3 bg-white/50 backdrop-blur-md rounded-full shadow-lg">
-              Drag to look around • Scroll to zoom • Tap a crane
-            </p>
+          <div className={`transition-all duration-1000 transform ${showInstructions ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+            <div className="flex items-center gap-6 px-8 py-4 bg-white/10 backdrop-blur-xl border border-white/20 rounded-full shadow-2xl">
+              <div className="flex flex-col items-center gap-1 opacity-60">
+                <span className="text-[10px] uppercase tracking-widest text-[#333] font-bold">Look</span>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></svg>
+              </div>
+              <div className="w-[1px] h-8 bg-[#333]/10"></div>
+              <div className="flex flex-col items-center gap-1 opacity-60">
+                <span className="text-[10px] uppercase tracking-widest text-[#333] font-bold">Zoom</span>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /><path d="M11 8v6M8 11h6" /></svg>
+              </div>
+              <div className="w-[1px] h-8 bg-[#333]/10"></div>
+              <div className="flex flex-col items-center gap-1 opacity-60">
+                <span className="text-[10px] uppercase tracking-widest text-[#333] font-bold">Discover</span>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
+              </div>
+            </div>
           </div>
         </div>
       )}
