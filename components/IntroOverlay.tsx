@@ -85,11 +85,11 @@ export default function IntroOverlay({ onComplete, onGallery }: IntroProps) {
                         key={i}
                         ref={el => { textsRef.current[i] = el }}
                         className={`absolute inset-0 flex items-center justify-center text-center px-4 opacity-0
-                            ${i === introSequence.length - 1
+                            ${step.highlight
                                 ? "text-xl md:text-2xl font-bold tracking-widest uppercase"
                                 : "text-lg md:text-xl font-medium tracking-wide"
                             }
-                            ${i === 0 ? "font-light tracking-wider text-base md:text-lg" : ""}
+                            ${!step.highlight && i === 0 ? "font-light tracking-wider text-base md:text-lg" : ""}
                         `}
                     >
                         {step.text}

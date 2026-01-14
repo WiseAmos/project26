@@ -16,8 +16,8 @@ export interface IntroStep {
     // hold: 1.5 (Wait before fading out? Or wait before next?)
     // Re-reading plan: "FadeIn Duration, Hold Duration".
     // Actual implementation in IntroOverlay uses: 
-    // tl.to(alpha:1, duration:2) -> tl.to(alpha:0, delay:1.5)
-    // So "duration" = FadeIn Time. "hold" = Time visible before FadeOut.
+    // duration: FadeIn Time. "hold" = Time visible before FadeOut.
+    highlight?: boolean // Whether to style this as a "Hero" line (Bold, Caps)
 }
 
 export interface AppConfig {
@@ -89,9 +89,19 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
     }, [])
 
     const updateConfig = async (newConfig: AppConfig) => {
-        // Optimistic update? No, let snapshot handle it.
-        // Just write to DB.
-        await setDoc(doc(db, 'config', 'global'), newConfig)
+        // Secure Server-Side Update
+        // Optimistic update logic could go here, but we rely on onSnapshot to propagate changes back to us.
+        try {
+            const res = await fetch('/api/admin/update-config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newConfig)
+            })
+            if (!res.ok) throw new Error("Failed to update config")
+        } catch (e) {
+            console.error("Config Update Error:", e)
+            throw e // Re-throw to let Admin Page handle error state
+        }
     }
 
     const resetConfig = async () => {

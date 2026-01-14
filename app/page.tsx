@@ -192,7 +192,7 @@ export default function Home() {
       {/* FOLDING INSTRUCTIONS - DOM overlay (not drei Html) */}
       {mode === 'FOLDING' && !foldComplete && (
         <div
-          className="fixed inset-0 w-screen h-screen flex flex-col items-center justify-start pt-24 pointer-events-none"
+          className="fixed inset-0 w-screen h-screen flex flex-col items-center justify-start pt-36 md:pt-24 pointer-events-none"
           style={{ zIndex: 10 }}
         >
           <div className="text-center">
