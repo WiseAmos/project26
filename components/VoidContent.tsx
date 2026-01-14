@@ -55,8 +55,84 @@ interface VoidContentProps {
     onSelectWish?: (wish: string | null) => void
 }
 
+// -- ANIMATED CRANE COMPONENT --
+function Crane({ i, wish, geometry, position, rotation, baseScale, onSelectWish }: {
+    i: number
+    wish: string
+    geometry: THREE.BufferGeometry
+    position: [number, number, number]
+    rotation: [number, number, number]
+    baseScale: number
+    onSelectWish?: (wish: string | null) => void
+}) {
+    const meshRef = useRef<THREE.Mesh>(null)
+    const [hovered, setHovered] = useState(false)
+
+    // Animation State
+    const currentScale = useRef(0) // Start at 0 for "fade in" effect
+    const hoverScale = useRef(1.0) // Independent hover smoothing
+    const targetScale = baseScale
+
+    useFrame((state, delta) => {
+        if (!meshRef.current) return
+
+        // Smoothly lerp current scale to target (Entrance)
+        currentScale.current = THREE.MathUtils.lerp(currentScale.current, targetScale, delta * 3)
+
+        // Smoothly lerp hover scale (Interaction)
+        const targetHover = hovered ? 1.2 : 1.0
+        hoverScale.current = THREE.MathUtils.lerp(hoverScale.current, targetHover, delta * 8)
+
+        // Add subtle floating motion
+        const time = state.clock.getElapsedTime()
+        const floatY = Math.sin(time + i) * 0.05
+
+        const finalScale = currentScale.current * hoverScale.current
+
+        meshRef.current.scale.set(finalScale, finalScale, finalScale)
+        meshRef.current.position.y = position[1] + floatY
+    })
+
+    const msg = wish.toLowerCase()
+    const isRed = msg.includes('sorry') || msg.includes('love') || msg.includes('regret') || msg.includes('miss')
+    const color = isRed ? "#ffa0a0" : "#ffffff"
+
+    return (
+        <mesh
+            ref={meshRef}
+            geometry={geometry}
+            position={position}
+            rotation={rotation}
+            scale={[0, 0, 0]} // Initial scale handled by Ref
+            onClick={(e) => {
+                e.stopPropagation()
+                onSelectWish?.(wish)
+            }}
+            onPointerOver={(e) => {
+                e.stopPropagation()
+                setHovered(true)
+                document.body.style.cursor = 'pointer'
+            }}
+            onPointerOut={(e) => {
+                e.stopPropagation()
+                setHovered(false)
+                document.body.style.cursor = 'auto'
+            }}
+        >
+            <meshStandardMaterial
+                color={color}
+                flatShading
+                roughness={0.6}
+                metalness={0.1}
+                side={THREE.DoubleSide}
+                transparent
+                opacity={0.9} // Slight transparency for the paper look
+            />
+        </mesh>
+    )
+}
+
 export default function VoidContent({ onSelectWish }: VoidContentProps) {
-    const meshRef = useRef<THREE.InstancedMesh>(null)
     const [wishes, setWishes] = useState<string[]>([])
 
     // Connect to Firestore (Realtime)
@@ -64,7 +140,6 @@ export default function VoidContent({ onSelectWish }: VoidContentProps) {
         const q = query(collection(db, 'wishes'), orderBy('timestamp', 'desc'), limit(1000))
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const data = snapshot.docs.map(doc => doc.data().message as string)
-            // Ensure at least some data if empty? No, accuracy requested.
             setWishes(data)
         })
         return () => unsubscribe()
@@ -78,7 +153,6 @@ export default function VoidContent({ onSelectWish }: VoidContentProps) {
 
         for (let i = 0; i < COUNT; i++) {
             // SPHERICAL DISTRIBUTION with HOLE (Donut/Shell)
-            // Radius between 5 and SPREAD/2 for closer spawning
             const radius = 5 + Math.random() * (SPREAD - 5)
             const theta = Math.random() * Math.PI * 2
             const phi = Math.acos(2 * Math.random() - 1)
@@ -112,47 +186,24 @@ export default function VoidContent({ onSelectWish }: VoidContentProps) {
     return (
         <group>
             {wishes.map((wish, i) => {
-                // Bounds check for positions (safety)
+                // Bounds check
                 if (i * 3 >= positions.length) return null
 
                 const pos = [positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]] as [number, number, number]
                 const rot = [rotations[i * 3], rotations[i * 3 + 1], rotations[i * 3 + 2]] as [number, number, number]
-                // Scaling individual meshes slightly different? Keep unified for now.
-                const scaleValue = scales[i * 3]
-
-                const msg = wish.toLowerCase()
-                const isRed = msg.includes('sorry') || msg.includes('love') || msg.includes('regret') || msg.includes('miss')
-                const color = isRed ? "#ffa0a0" : "#ffffff"
+                const baseScale = scales[i * 3]
 
                 return (
-                    <mesh
+                    <Crane
                         key={i}
+                        i={i}
+                        wish={wish}
                         geometry={geometry}
                         position={pos}
                         rotation={rot}
-                        scale={[scaleValue, scaleValue, scaleValue]}
-                        onClick={(e) => {
-                            e.stopPropagation()
-                            console.log("Clicked Crane:", i, wish)
-                            onSelectWish?.(wish)
-                        }}
-                        onPointerOver={(e) => {
-                            e.stopPropagation()
-                            document.body.style.cursor = 'pointer'
-                        }}
-                        onPointerOut={(e) => {
-                            e.stopPropagation()
-                            document.body.style.cursor = 'auto'
-                        }}
-                    >
-                        <meshStandardMaterial
-                            color={color}
-                            flatShading
-                            roughness={0.6}
-                            metalness={0.1}
-                            side={THREE.DoubleSide}
-                        />
-                    </mesh>
+                        baseScale={baseScale}
+                        onSelectWish={onSelectWish}
+                    />
                 )
             })}
         </group>
