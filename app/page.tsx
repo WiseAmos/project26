@@ -10,7 +10,7 @@ import { collection, addDoc } from 'firebase/firestore'
 export default function Home() {
   const [mode, setMode] = useState<'LOADING' | 'INTRO' | 'FOLDING' | 'WISH' | 'VOID'>('LOADING')
   const [selectedWish, setSelectedWish] = useState<string | null>(null)
-  const [showInstructions, setShowInstructions] = useState(true)
+  const [showInstructions, setShowInstructions] = useState(false)
   const [hasInteracted, setHasInteracted] = useState(false)
   const [isReturningUser, setIsReturningUser] = useState(false)
 
@@ -209,7 +209,7 @@ export default function Home() {
       )}
 
       {/* VOID MODE INSTRUCTIONS - Centered */}
-      {mode === 'VOID' && !selectedWish && showInstructions && (
+      {mode === 'VOID' && !selectedWish && (
         <div
           className="fixed bottom-12 left-1/2 -translate-x-1/2 pointer-events-none"
           style={{ zIndex: 20 }}
