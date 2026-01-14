@@ -13,6 +13,7 @@ interface SceneProps {
     onSelectWish?: (wish: string | null) => void
     onFoldProgress?: (step: number, progress: number, isComplete: boolean) => void
     isReleasing?: boolean
+    isSettling?: boolean
 }
 
 function CameraController({ mode, isReleasing }: { mode: string, isReleasing?: boolean }) {
@@ -57,7 +58,7 @@ function CameraController({ mode, isReleasing }: { mode: string, isReleasing?: b
     return null
 }
 
-export default function Scene({ mode, onFoldComplete, onSelectWish, onFoldProgress, isReleasing }: SceneProps) {
+export default function Scene({ mode, onFoldComplete, onSelectWish, onFoldProgress, isReleasing, isSettling, lastWish }: SceneProps) {
     return (
         <div className="fixed inset-0 w-screen h-screen bg-[#f4f1ea]">
             <Canvas shadows camera={{ position: [0, 2, 4], fov: 45 }}>
@@ -78,13 +79,15 @@ export default function Scene({ mode, onFoldComplete, onSelectWish, onFoldProgre
 
                 {/* USER CRANE (Visible during folding, wish input, AND void/gallery) 
                     Kept in VOID so the flown-away crane remains visible in the distance */}
-                {(mode === 'FOLDING' || mode === 'WISH' || mode === 'VOID') && (
+                {(mode === 'INTRO' || mode === 'FOLDING' || mode === 'WISH' || mode === 'VOID') && (
                     <FoldingContent
                         key="folding-stage"
                         onComplete={onFoldComplete}
                         forceFinish={mode === 'WISH' || mode === 'VOID'}
                         onProgressChange={onFoldProgress}
                         isReleasing={isReleasing}
+                        lastWish={lastWish}
+                        onSelectWish={onSelectWish}
                     />
                 )}
 
@@ -98,6 +101,7 @@ export default function Scene({ mode, onFoldComplete, onSelectWish, onFoldProgre
                 {mode === 'FOLDING' || mode === 'WISH' ? (
                     <OrbitControls
                         key="orbit-folding"
+                        enabled={!isReleasing} // Disable during release flight
                         enableZoom={false}
                         enablePan={false}
                         minPolarAngle={Math.PI / 4}
@@ -107,6 +111,7 @@ export default function Scene({ mode, onFoldComplete, onSelectWish, onFoldProgre
                     <OrbitControls
                         key="orbit-void"
                         makeDefault
+                        enabled={!isSettling} // Disable during settling phase
                         enablePan={true}
                         enableZoom={true}
                         enableRotate={true}

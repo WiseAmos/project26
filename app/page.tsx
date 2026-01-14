@@ -18,12 +18,17 @@ export default function Home() {
   const [foldProgress, setFoldProgress] = useState(0)
   const [foldComplete, setFoldComplete] = useState(false)
   const [isReleasing, setIsReleasing] = useState(false)
+  const [isSettling, setIsSettling] = useState(false)
+
+  // Last submitted wish (for the user's crane interaction)
+  const [lastWish, setLastWish] = useState<string | null>(null)
 
   const handleFoldComplete = () => {
     setMode('WISH')
   }
 
   const handleWishSend = (message: string) => {
+    setLastWish(message) // Store for the "Hero" crane
     // 1. Save to Firestore (Async - don't await blocking animation)
     addDoc(collection(db, 'wishes'), {
       message: message,
@@ -37,6 +42,10 @@ export default function Home() {
     setTimeout(() => {
       setMode('VOID')
       setIsReleasing(false)
+
+      // 4. Lock controls briefly to allow clean entry
+      setIsSettling(true)
+      setTimeout(() => setIsSettling(false), 1800)
     }, 2500)
   }
 
@@ -103,10 +112,10 @@ export default function Home() {
   const getFoldInstruction = () => {
     if (foldComplete) return null
     switch (foldStep) {
-      case 0: return "Drag right to fold diagonal"
-      case 1: return "Drag right to fold in half"
-      case 2: return "Drag right to fold wings & head"
-      case 3: return "Drag right to release"
+      case 0: return "Drag right to start folding"
+      case 1: return "Folding..."
+      case 2: return "Folding..."
+      case 3: return "Ready" // Should not be seen if logic flows correctly
       default: return null
     }
   }
@@ -115,7 +124,7 @@ export default function Home() {
     <main className="relative w-screen h-screen overflow-hidden">
       {/* 3D SCENE (Always mounted, revealed by fade) */}
       <div
-        className={`fixed inset-0 w-screen h-screen transition-opacity duration-700 ${mode === 'INTRO' ? 'opacity-0' : 'opacity-100'}`}
+        className="fixed inset-0 w-screen h-screen"
         style={{ zIndex: 0 }}
       >
         <Scene
@@ -124,6 +133,8 @@ export default function Home() {
           onSelectWish={handleSelectWish}
           onFoldProgress={handleFoldProgress}
           isReleasing={isReleasing}
+          isSettling={isSettling}
+          lastWish={lastWish}
         />
       </div>
 
@@ -178,53 +189,40 @@ export default function Home() {
       {selectedWish && (
         <div
           className="fixed top-0 left-0 right-0 bottom-0 w-screen h-screen flex items-center justify-center"
-          style={{ zIndex: 100, backgroundColor: 'rgba(0,0,0,0.3)' }}
+          style={{ zIndex: 100, backgroundColor: 'rgba(244, 241, 234, 0.4)' }}
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
             handleCloseWish()
           }}
         >
+          {/* Modal card */}
           <div
-            className="relative mx-4"
+            className="relative w-[90vw] md:w-auto md:min-w-[360px] md:max-w-lg bg-[#fdfbf6]/90 backdrop-blur-xl px-8 py-12 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.1)] border border-white/50 rounded-[2rem] flex flex-col items-center text-center"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Glow effect */}
-            <div className="absolute inset-0 bg-gradient-to-b from-white/60 to-white/20 blur-2xl scale-110 rounded-2xl"></div>
 
-            {/* Modal card */}
-            <div className="relative bg-gradient-to-b from-[#fefefe] to-[#f8f6f2] backdrop-blur-xl px-8 py-10 md:px-14 md:py-14 shadow-2xl border border-white/60 max-w-[85vw] md:max-w-lg rounded-2xl">
-
-              {/* Decorative crane silhouette */}
-              <div className="absolute top-4 right-4 opacity-10">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" className="text-[#333]">
-                  <path d="M12 2L8 8H4L8 12L4 20H12L16 12L20 8H16L12 2Z" />
-                </svg>
-              </div>
-
-              {/* Quote marks */}
-              <div className="text-6xl md:text-7xl text-[#333]/10 font-serif absolute -top-2 left-4 leading-none">"</div>
-
-              {/* Wish text */}
-              <p className="text-[#333] font-serif italic text-xl md:text-2xl lg:text-3xl leading-relaxed tracking-wide text-center pt-4 pb-8">
-                {selectedWish}
+            {/* Header: Storytelling */}
+            <div className="mb-6 opacity-40">
+              <p className="text-[0.6rem] md:text-xs tracking-[0.2em] font-sans text-[#333]">
+                an unwished wish
               </p>
+              <div className="w-[1px] h-6 bg-[#333] mx-auto mt-3"></div>
+            </div>
 
-              {/* Divider */}
-              <div className="w-16 h-[1px] bg-gradient-to-r from-transparent via-[#333]/20 to-transparent mx-auto mb-6"></div>
+            {/* Wish content */}
+            <div className="relative z-10 w-full px-2 md:max-w-[400px]">
+              <p className="text-[#333] font-serif italic text-2xl md:text-3xl leading-relaxed tracking-wide break-words">
+                "{selectedWish}"
+              </p>
+            </div>
 
-              {/* Close button */}
-              <button
-                type="button"
-                className="block mx-auto text-xs uppercase tracking-[0.25em] text-[#333]/50 hover:text-[#333] transition-all duration-300 py-2 px-6 rounded-full hover:bg-[#333]/5"
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  handleCloseWish()
-                }}
-              >
-                Close
-              </button>
+            {/* Footer: Context */}
+            <div className="mt-8 opacity-40">
+              <div className="w-[1px] h-6 bg-[#333] mx-auto mb-3"></div>
+              <p className="text-[0.6rem] md:text-xs tracking-[0.2em] font-sans text-[#333]">
+                released to the fold
+              </p>
             </div>
           </div>
         </div>

@@ -75,10 +75,10 @@ export default function IntroOverlay({ onComplete, onGallery }: IntroProps) {
 
             <button
                 onClick={onGallery}
-                style={{ position: 'fixed', top: '2.5rem', right: '3rem', left: 'auto' }}
-                className="group flex items-center justify-center gap-2 z-[60] cursor-pointer"
+                style={{ position: 'fixed', top: '2rem', right: '2rem', zIndex: 9999 }}
+                className="group flex items-center gap-3 cursor-pointer bg-transparent border-none shadow-none outline-none p-0 m-0"
             >
-                <span className="font-serif italic text-lg text-[#333]/80 group-hover:text-[#333] transition-colors duration-500">
+                <span className="font-serif italic text-lg text-[#333]/60 group-hover:text-[#333] transition-colors duration-500">
                     view gallery
                 </span>
                 <div className="w-8 h-[1px] bg-[#333]/30 group-hover:w-12 group-hover:bg-[#333] transition-all duration-500"></div>

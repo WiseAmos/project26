@@ -64,6 +64,7 @@ export default function VoidContent({ onSelectWish }: VoidContentProps) {
         const q = query(collection(db, 'wishes'), orderBy('timestamp', 'desc'), limit(1000))
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const data = snapshot.docs.map(doc => doc.data().message as string)
+            // Ensure at least some data if empty? No, accuracy requested.
             setWishes(data)
         })
         return () => unsubscribe()
@@ -76,9 +77,15 @@ export default function VoidContent({ onSelectWish }: VoidContentProps) {
         const s = new Float32Array(COUNT * 3)
 
         for (let i = 0; i < COUNT; i++) {
-            p[i * 3] = (Math.random() - 0.5) * SPREAD
-            p[i * 3 + 1] = (Math.random() - 0.5) * SPREAD
-            p[i * 3 + 2] = (Math.random() - 0.5) * SPREAD
+            // SPHERICAL DISTRIBUTION with HOLE (Donut/Shell)
+            // Radius between 15 and SPREAD/2
+            const radius = 15 + Math.random() * (SPREAD - 15)
+            const theta = Math.random() * Math.PI * 2
+            const phi = Math.acos(2 * Math.random() - 1)
+
+            p[i * 3] = radius * Math.sin(phi) * Math.cos(theta)
+            p[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta)
+            p[i * 3 + 2] = radius * Math.cos(phi)
 
             r[i * 3] = Math.random() * Math.PI
             r[i * 3 + 1] = Math.random() * Math.PI
@@ -91,40 +98,6 @@ export default function VoidContent({ onSelectWish }: VoidContentProps) {
         return { positions: p, rotations: r, scales: s }
     }, [])
 
-    // Update Instances
-    useLayoutEffect(() => {
-        if (!meshRef.current) return
-
-        const dummy = new THREE.Object3D()
-        const color = new THREE.Color()
-
-        for (let i = 0; i < COUNT; i++) {
-            dummy.position.set(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2])
-            dummy.rotation.set(rotations[i * 3], rotations[i * 3 + 1], rotations[i * 3 + 2])
-            dummy.scale.set(scales[i * 3], scales[i * 3 + 1], scales[i * 3 + 2])
-            dummy.updateMatrix()
-            meshRef.current.setMatrixAt(i, dummy.matrix)
-
-            // Color Logic
-            let isRed = false
-            if (i < wishes.length) {
-                const msg = wishes[i].toLowerCase()
-                if (msg.includes('sorry') || msg.includes('love')) isRed = true
-            } else {
-                if (Math.random() < 0.05) isRed = true
-            }
-
-            if (isRed) color.setHex(0xfff0f0)
-            else color.setHex(0xffffff)
-
-            meshRef.current.setColorAt(i, color)
-        }
-
-        meshRef.current.instanceMatrix.needsUpdate = true
-        if (meshRef.current.instanceColor) meshRef.current.instanceColor.needsUpdate = true
-
-    }, [wishes, positions, rotations, scales])
-
     // Crane Geometry
     const geometry = useMemo(() => {
         const geo = new THREE.BufferGeometry()
@@ -132,39 +105,56 @@ export default function VoidContent({ onSelectWish }: VoidContentProps) {
         geo.setAttribute('position', new THREE.BufferAttribute(vertFloat, 3))
         geo.setIndex(INDICES)
         geo.computeVertexNormals()
+        geo.computeBoundingSphere()
         return geo
     }, [])
 
-    const handleClick = useCallback((e: any) => {
-        e.stopPropagation()
-        const id = e.instanceId
-
-        console.log("Clicked Instance ID:", id, "Total Wishes:", wishes.length)
-
-        if (id !== undefined && onSelectWish) {
-            if (id < wishes.length) {
-                onSelectWish(wishes[id])
-            } else {
-                onSelectWish("A silent prayer.")
-            }
-        }
-    }, [wishes, onSelectWish])
-
     return (
-        <instancedMesh
-            ref={meshRef}
-            args={[geometry, undefined, COUNT]}
-            onClick={handleClick}
-            onPointerOver={() => document.body.style.cursor = 'pointer'}
-            onPointerOut={() => document.body.style.cursor = 'auto'}
-        >
-            <meshStandardMaterial
-                color="#ffffff"
-                flatShading
-                roughness={0.6}
-                metalness={0.1}
-                side={THREE.DoubleSide}
-            />
-        </instancedMesh>
+        <group>
+            {wishes.map((wish, i) => {
+                // Bounds check for positions (safety)
+                if (i * 3 >= positions.length) return null
+
+                const pos = [positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]] as [number, number, number]
+                const rot = [rotations[i * 3], rotations[i * 3 + 1], rotations[i * 3 + 2]] as [number, number, number]
+                // Scaling individual meshes slightly different? Keep unified for now.
+                const scaleValue = scales[i * 3]
+
+                const msg = wish.toLowerCase()
+                const isRed = msg.includes('sorry') || msg.includes('love') || msg.includes('regret') || msg.includes('miss')
+                const color = isRed ? "#ffa0a0" : "#ffffff"
+
+                return (
+                    <mesh
+                        key={i}
+                        geometry={geometry}
+                        position={pos}
+                        rotation={rot}
+                        scale={[scaleValue, scaleValue, scaleValue]}
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            console.log("Clicked Crane:", i, wish)
+                            onSelectWish?.(wish)
+                        }}
+                        onPointerOver={(e) => {
+                            e.stopPropagation()
+                            document.body.style.cursor = 'pointer'
+                        }}
+                        onPointerOut={(e) => {
+                            e.stopPropagation()
+                            document.body.style.cursor = 'auto'
+                        }}
+                    >
+                        <meshStandardMaterial
+                            color={color}
+                            flatShading
+                            roughness={0.6}
+                            metalness={0.1}
+                            side={THREE.DoubleSide}
+                        />
+                    </mesh>
+                )
+            })}
+        </group>
     )
 }

@@ -251,9 +251,11 @@ interface PaperSheetProps {
     step: number
     progress: number
     isReleasing?: boolean
+    lastWish?: string | null
+    onSelectWish?: (wish: string | null) => void
 }
 
-export function PaperFoldingEngine({ step, progress, isReleasing }: PaperSheetProps) {
+export function PaperFoldingEngine({ step, progress, isReleasing, lastWish, onSelectWish }: PaperSheetProps) {
     const meshRef = useRef<THREE.Mesh>(null)
     const groupRef = useRef<THREE.Group>(null)
 
@@ -369,7 +371,7 @@ export function PaperFoldingEngine({ step, progress, isReleasing }: PaperSheetPr
     })
 
     return (
-        <group ref={groupRef} scale={1.2} rotation={[0, Math.PI / 4, 0]}>
+        <group ref={groupRef} scale={0.85} rotation={[0, Math.PI / 4, 0]}>
             <mesh ref={meshRef} geometry={geometry} material={PAPER_MATERIAL} />
         </group>
     )
