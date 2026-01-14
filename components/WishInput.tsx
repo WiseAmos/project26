@@ -53,7 +53,7 @@ export default function WishInput({ onSend, onColorChange, selectedColor }: Wish
                         autoComplete="off"
                     />
                 </div>
-                <p className={`mt-2 text-[10px] tracking-[0.2em] uppercase text-[#333]/30 transition-opacity duration-700 ${message.trim().length > 0 ? 'opacity-100' : 'opacity-0'}`}>
+                <p className={`mt-1 text-[10px] tracking-[0.2em] uppercase text-[#333]/30 transition-opacity duration-700 ${message.trim().length > 0 ? 'opacity-100' : 'opacity-0'}`}>
                     Press Enter to Release
                 </p>
             </div>
