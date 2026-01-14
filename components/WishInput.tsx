@@ -1,12 +1,14 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useConfig } from './ConfigContext'
 
 interface WishInputProps {
     onSend: (message: string) => void
 }
 
 export default function WishInput({ onSend }: WishInputProps) {
+    const { config } = useConfig()
     const [message, setMessage] = useState('')
     const inputRef = useRef<HTMLInputElement>(null)
     const [isActive, setIsActive] = useState(false)
@@ -43,7 +45,7 @@ export default function WishInput({ onSend }: WishInputProps) {
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        placeholder="Write your unwished wish..."
+                        placeholder={config.instructions.wishPlaceholder || "Write your unwished wish..."}
                         className="w-full bg-transparent text-[#333] text-center font-serif text-xl md:text-2xl placeholder:text-[#333]/30 outline-none border-none focus:ring-0 transition-all duration-700 p-4"
                         autoComplete="off"
                     />

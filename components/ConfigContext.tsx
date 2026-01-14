@@ -25,6 +25,7 @@ export interface AppConfig {
     instructions: {
         folding: string[]
         void: string
+        wishPlaceholder: string
     }
     appTimings: {
         releaseDelay: number
@@ -41,7 +42,8 @@ const DEFAULT_CONFIG: AppConfig = {
     ],
     instructions: {
         folding: ["Drag right to start folding", "Folding...", "Ready"],
-        void: "Drag to look around • Scroll to zoom • Tap a crane"
+        void: "Drag to look around • Scroll to zoom • Tap a crane",
+        wishPlaceholder: "Write your unwished wish..."
     },
     appTimings: {
         releaseDelay: 2500,

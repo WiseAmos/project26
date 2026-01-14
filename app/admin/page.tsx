@@ -406,6 +406,17 @@ export default function AdminPage() {
                                         className="w-full text-base p-4 bg-white rounded-xl border border-gray-200 focus:border-gray-900 outline-none transition-all shadow-sm font-medium text-gray-800"
                                     />
                                 </div>
+                                <div className="mt-6">
+                                    <label className="block text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-3">
+                                        Wish Input Placeholder
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={localConfig.instructions.wishPlaceholder}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, instructions: { ...localConfig.instructions, wishPlaceholder: e.target.value } })}
+                                        className="w-full text-base p-4 bg-white rounded-xl border border-gray-200 focus:border-gray-900 outline-none transition-all shadow-sm font-medium text-gray-800"
+                                    />
+                                </div>
                             </section>
 
                             {/* Timings */}
