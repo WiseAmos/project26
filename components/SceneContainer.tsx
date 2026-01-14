@@ -14,7 +14,7 @@ export default function SceneContainer() {
 
     return (
         <div className="w-full h-full">
-            <Scene onComplete={handleComplete} />
+            <Scene onComplete={handleComplete} mode="INTRO" />
         </div>
     )
 }
