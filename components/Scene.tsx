@@ -14,10 +14,8 @@ interface SceneProps {
     onFoldProgress?: (step: number, progress: number, isComplete: boolean) => void
     isReleasing?: boolean
     isSettling?: boolean
-    isReleasing?: boolean
-    isSettling?: boolean
     lastWish?: string | null
-    onComplete?: () => void // For Intro completion
+    onComplete?: () => void
 }
 
 function CameraController({ mode, isReleasing }: { mode: string, isReleasing?: boolean }) {
