@@ -55,10 +55,10 @@ const DEFAULT_CONFIG: AppConfig = {
         settleTime: 1800
     },
     craneColors: [
-        { id: 'unsaid', color: '#e0e0e0', label: 'The Unsaid' }, // Grey
-        { id: 'regret', color: '#7a8fa3', label: 'The Regret' }, // Muted Blue
-        { id: 'yearning', color: '#d4b4b4', label: 'The Yearning' }, // Blush Pink
-        { id: 'closure', color: '#333333', label: 'The Closure' } // Charcoal
+        { id: 'grey', color: '#808080', label: 'The Unsent' },
+        { id: 'blue', color: '#A4C2F4', label: 'The Regret' },
+        { id: 'red', color: '#E06666', label: 'The Yearning' },
+        { id: 'black', color: '#000000', label: 'The Closure' },
     ]
 }
 
@@ -108,7 +108,10 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
         try {
             const res = await fetch('/api/admin/update-config', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-admin-key': '26102006'
+                },
                 body: JSON.stringify(newConfig)
             })
             if (!res.ok) throw new Error("Failed to update config")

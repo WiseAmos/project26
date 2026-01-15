@@ -92,6 +92,7 @@ export default function AdminPage() {
     const [isBulkImportOpen, setIsBulkImportOpen] = useState(false)
     const [bulkInput, setBulkInput] = useState("")
     const [isImporting, setIsImporting] = useState(false)
+    const [bulkColor, setBulkColor] = useState("#e0e0e0") // Default color
 
     // Load Config
     useEffect(() => {
@@ -116,7 +117,10 @@ export default function AdminPage() {
         try {
             const res = await fetch('/api/admin/delete-wish', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-admin-key': '26102006'
+                },
                 body: JSON.stringify({ id })
             })
             if (!res.ok) throw new Error("API Error")
@@ -135,8 +139,11 @@ export default function AdminPage() {
         try {
             const res = await fetch('/api/admin/import-wishes', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ wishes: lines })
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-admin-key': '26102006'
+                },
+                body: JSON.stringify({ wishes: lines, color: bulkColor })
             })
             if (!res.ok) throw new Error("Import Failed")
 
@@ -260,6 +267,26 @@ export default function AdminPage() {
                                         className="w-full h-64 bg-gray-50 rounded-xl border border-gray-200 p-4 focus:ring-2 ring-gray-900 focus:outline-none resize-none font-medium text-gray-800 placeholder:text-gray-300"
                                         placeholder="I wish for happiness...&#10;I wish to see the world...&#10;I wish for peace..."
                                     />
+
+                                    {/* BULK COLOR SELECTION */}
+                                    <div className="space-y-2">
+                                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Select Color for Batch</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {localConfig?.craneColors?.map((c) => (
+                                                <button
+                                                    key={c.id}
+                                                    onClick={() => setBulkColor(c.color)}
+                                                    className={`w-10 h-10 rounded-full border-2 transition-all ${bulkColor === c.color
+                                                        ? 'border-gray-900 scale-110 shadow-md'
+                                                        : 'border-transparent hover:scale-105'
+                                                        }`}
+                                                    style={{ backgroundColor: c.color }}
+                                                    title={c.label}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+
                                     <div className="flex justify-end gap-3 pt-2">
                                         <button onClick={() => setIsBulkImportOpen(false)} className="px-6 py-3 font-bold text-gray-500 hover:text-gray-900">Cancel</button>
                                         <button

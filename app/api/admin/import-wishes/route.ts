@@ -3,7 +3,13 @@ import { adminDb } from '@/lib/firebase-admin'
 
 export async function POST(req: NextRequest) {
     try {
-        const { wishes } = await req.json()
+        const { wishes, color } = await req.json()
+
+        // AUTH CHECK
+        const authHeader = req.headers.get('x-admin-key')
+        if (authHeader !== (process.env.ADMIN_PASSWORD || '26102006')) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+        }
 
         if (!Array.isArray(wishes)) {
             return NextResponse.json({ error: "Invalid format" }, { status: 400 })
@@ -26,7 +32,8 @@ export async function POST(req: NextRequest) {
             const newDoc = collectionRef.doc();
             currentBatch.set(newDoc, {
                 message: wishText.trim(),
-                timestamp: now - (operationCount * 100) // Stagger slightly so they sort properly
+                timestamp: now - (operationCount * 100), // Stagger slightly so they sort properly
+                color: color || '#e0e0e0'
             });
 
             operationCount++;

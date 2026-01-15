@@ -5,6 +5,13 @@ export async function POST(req: NextRequest) {
     try {
         const newConfig = await req.json()
 
+
+        // AUTH CHECK
+        const authHeader = req.headers.get('x-admin-key')
+        if (authHeader !== (process.env.ADMIN_PASSWORD || '26102006')) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+        }
+
         if (!newConfig || typeof newConfig !== 'object') {
             return NextResponse.json({ error: "Invalid config" }, { status: 400 })
         }
