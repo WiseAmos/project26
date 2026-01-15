@@ -58,8 +58,7 @@ export default function WishInput({ onSend, onColorChange, selectedColor }: Wish
             {/* TOP: INPUT FIELD */}
             <div className="w-full max-w-lg px-6 flex flex-col items-center gap-4 pointer-events-auto mt-4 md:mt-0">
                 <div
-                    className="relative w-full group bg-white/20 backdrop-blur-sm rounded-xl p-1 transition-all duration-500 hover:bg-white/30 border border-white/10 hover:border-white/30 animate-subtle-pulse"
-                    style={{ '--pulse-color': selectedColor + '40' } as React.CSSProperties} // 40 = 25% opacity hex
+                    className="relative w-full group bg-white/20 backdrop-blur-sm rounded-xl p-1 transition-all duration-500 hover:bg-white/30 border border-white/10 hover:border-white/30"
                 >
                     <input
                         ref={inputRef}

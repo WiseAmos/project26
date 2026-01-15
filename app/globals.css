@@ -60,19 +60,3 @@ body {
 .animate-slide-up {
   animation: slideUp 0.6s ease-out forwards;
 }
-
-@keyframes subtlePulse {
-
-  0%,
-  100% {
-    box-shadow: 0 0 0 0px var(--pulse-color, rgba(255, 255, 255, 0));
-  }
-
-  50% {
-    box-shadow: 0 0 20px 2px var(--pulse-color, rgba(255, 255, 255, 0.2));
-  }
-}
-
-.animate-subtle-pulse {
-  animation: subtlePulse 4s infinite ease-in-out;
-}

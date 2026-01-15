@@ -4,9 +4,13 @@ import React, { useState, useEffect } from 'react'
 import { collection, onSnapshot, deleteDoc, doc, updateDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useConfig, AppConfig, IntroStep } from '@/components/ConfigContext'
-import { Trash2, Plus, Save, Clock, Type, Settings, LayoutGrid, List, Palette } from 'lucide-react'
+import { Trash2, Plus, Save, Clock, Type, Settings, LayoutGrid, List, Palette, Globe } from 'lucide-react'
 import { clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
+
+// Analytics Components
+import AnalyticsMap from '@/components/admin/AnalyticsMap'
+import TrafficTable from '@/components/admin/TrafficTable'
 
 function cn(...inputs: (string | undefined | null | false)[]) {
     return twMerge(clsx(inputs))
@@ -78,7 +82,7 @@ function AdminLogin({ onLogin }: { onLogin: () => void }) {
 // -- MAIN DASHBOARD --
 export default function AdminPage() {
     const [isAuth, setIsAuth] = useState(false)
-    const [activeTab, setActiveTab] = useState<'WISHES' | 'CONFIG'>('WISHES')
+    const [activeTab, setActiveTab] = useState<'WISHES' | 'CONFIG' | 'TRAFFIC'>('WISHES')
 
     // Config Data
     const { config, updateConfig } = useConfig()
@@ -87,6 +91,10 @@ export default function AdminPage() {
 
     // Wishes Data
     const [wishes, setWishes] = useState<{ id: string, message: string, timestamp: number }[]>([])
+
+    // Analytics Data
+    const [analyticsData, setAnalyticsData] = useState<{ recentVisits: any[], mapData: any[], totalVisits: number } | null>(null)
+    const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false)
 
     // Bulk Import Modal
     const [isBulkImportOpen, setIsBulkImportOpen] = useState(false)
@@ -112,6 +120,24 @@ export default function AdminPage() {
         return () => unsub()
     }, [isAuth])
 
+    // Load Analytics when Tab Active
+    useEffect(() => {
+        if (!isAuth) return
+        if (activeTab === 'TRAFFIC') {
+            setIsLoadingAnalytics(true)
+            fetch('/api/admin/analytics', { headers: { 'x-admin-key': '26102006' } })
+                .then(res => res.json())
+                .then(data => {
+                    setAnalyticsData(data)
+                    setIsLoadingAnalytics(false)
+                })
+                .catch(err => {
+                    console.error(err)
+                    setIsLoadingAnalytics(false)
+                })
+        }
+    }, [isAuth, activeTab])
+
     // Handlers
     const handleDeleteWish = async (id: string) => {
         try {
@@ -124,7 +150,6 @@ export default function AdminPage() {
                 body: JSON.stringify({ id })
             })
             if (!res.ok) throw new Error("API Error")
-            // Optimistic update not needed as onSnapshot will trigger
         } catch (e) {
             console.error(e)
             alert("Failed to delete wish. Check permissions.")
@@ -212,20 +237,29 @@ export default function AdminPage() {
                     <span className="font-serif italic text-lg text-gray-800 hidden sm:block">Admin</span>
                 </div>
 
-                <div className="flex bg-gray-100/50 p-1 rounded-full border border-gray-200/50">
+                <div className="flex bg-gray-100/50 p-1 rounded-full border border-gray-200/50 overflow-x-auto no-scrollbar">
                     <button
                         onClick={() => setActiveTab('WISHES')}
                         className={cn(
-                            "flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold transition-all duration-300",
+                            "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 whitespace-nowrap",
                             activeTab === 'WISHES' ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"
                         )}
                     >
                         <LayoutGrid size={16} /> Wishes
                     </button>
                     <button
+                        onClick={() => setActiveTab('TRAFFIC')}
+                        className={cn(
+                            "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 whitespace-nowrap",
+                            activeTab === 'TRAFFIC' ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"
+                        )}
+                    >
+                        <Globe size={16} /> Traffic
+                    </button>
+                    <button
                         onClick={() => setActiveTab('CONFIG')}
                         className={cn(
-                            "flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold transition-all duration-300",
+                            "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 whitespace-nowrap",
                             activeTab === 'CONFIG' ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"
                         )}
                     >
@@ -252,7 +286,7 @@ export default function AdminPage() {
                             </button>
                         </div>
 
-                        {/* Bulk Import Modal - Basic implementation for speed */}
+                        {/* Bulk Import Modal */}
                         {isBulkImportOpen && (
                             <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setIsBulkImportOpen(false)}>
                                 <div className="bg-white rounded-3xl p-8 max-w-2xl w-full shadow-2xl space-y-4" onClick={e => e.stopPropagation()}>
@@ -325,10 +359,49 @@ export default function AdminPage() {
                     </div>
                 )}
 
+                {/* TRAFFIC TAB */}
+                {activeTab === 'TRAFFIC' && (
+                    <div className="space-y-8 animate-fade-in">
+                        <div className="flex justify-between items-end px-2">
+                            <div>
+                                <h2 className="text-4xl font-serif italic text-gray-900 mb-2">Global Traffic</h2>
+                                <p className="text-gray-500 font-medium">Tracking the journey of digital cranes across the world.</p>
+                            </div>
+                            <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-200">
+                                <span className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Total Visits</span>
+                                <span className="text-2xl font-serif font-bold text-gray-900">
+                                    {analyticsData ? analyticsData.totalVisits : '...'}
+                                </span>
+                            </div>
+                        </div>
+
+                        {isLoadingAnalytics ? (
+                            <div className="h-96 flex items-center justify-center">
+                                <span className="animate-spin text-4xl text-gray-200">⟳</span>
+                            </div>
+                        ) : analyticsData ? (
+                            <>
+                                {/* MAP Card */}
+                                <section className="bg-white/60 backdrop-blur-md rounded-[2.5rem] p-6 shadow-xl border border-white/50 overflow-hidden">
+                                    <h3 className="text-xl font-serif italic text-gray-900 mb-6 pl-2">Origin Map</h3>
+                                    <AnalyticsMap data={analyticsData.mapData} recentVisits={analyticsData.recentVisits} />
+                                </section>
+
+                                {/* Traffic Log */}
+                                <section className="bg-white/60 backdrop-blur-md rounded-[2.5rem] p-8 shadow-xl border border-white/50">
+                                    <h3 className="text-xl font-serif italic text-gray-900 mb-6 pl-2">Recent Visitors</h3>
+                                    <TrafficTable visits={analyticsData.recentVisits} />
+                                </section>
+                            </>
+                        ) : (
+                            <div className="text-center py-20 opacity-50">No data available</div>
+                        )}
+                    </div>
+                )}
+
                 {/* CONFIG CONFIG TAB */}
                 {activeTab === 'CONFIG' && localConfig && (
                     <div className="max-w-4xl mx-auto space-y-12 animate-fade-in">
-
                         {/* INTRO SEQUENCE */}
                         <section className="bg-white/60 backdrop-blur-md rounded-[2.5rem] p-8 md:p-12 shadow-xl border border-white/50">
                             <div className="flex items-center gap-4 mb-10">
@@ -341,7 +414,6 @@ export default function AdminPage() {
                             <div className="space-y-8 pl-6 border-l-[3px] border-gray-200 relative">
                                 {localConfig.introSequence.map((step, i) => (
                                     <div key={i} className="relative group bg-white/80 p-6 rounded-2xl shadow-sm border border-gray-100 transition-all hover:shadow-md hover:border-gray-300">
-                                        {/* Timeline Dot */}
                                         <div className="absolute -left-[35px] top-10 w-5 h-5 rounded-full bg-white border-[4px] border-gray-900 z-10 shadow-sm"></div>
 
                                         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-8 items-start">
@@ -358,9 +430,7 @@ export default function AdminPage() {
 
                                             <div className="grid grid-cols-2 gap-4 w-full md:w-auto bg-gray-50 p-4 rounded-xl border border-gray-100">
                                                 <div className="space-y-1 text-center">
-                                                    <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider block">
-                                                        Fade
-                                                    </label>
+                                                    <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider block">Fade</label>
                                                     <input
                                                         type="number" step="0.1"
                                                         value={step.duration}
@@ -369,9 +439,7 @@ export default function AdminPage() {
                                                     />
                                                 </div>
                                                 <div className="space-y-1 text-center">
-                                                    <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider block">
-                                                        Hold
-                                                    </label>
+                                                    <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider block">Hold</label>
                                                     <input
                                                         type="number" step="0.1"
                                                         value={step.hold}
@@ -379,10 +447,8 @@ export default function AdminPage() {
                                                         className="w-16 bg-white rounded-lg px-2 py-1 text-center font-bold text-gray-900 border border-gray-200 focus:border-gray-900 outline-none"
                                                     />
                                                 </div>
-
                                             </div>
 
-                                            {/* Style Toggle */}
                                             <div className="flex items-center gap-2 mt-2">
                                                 <button
                                                     onClick={() => handleIntroChange(i, 'highlight', !step.highlight)}
@@ -416,16 +482,13 @@ export default function AdminPage() {
 
                         {/* OTHER SETTINGS GRID */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            {/* Instructions */}
                             <section className="bg-white/60 backdrop-blur-sm rounded-[2.5rem] p-8 shadow-lg border border-white/50">
                                 <div className="flex items-center gap-3 mb-6">
                                     <div className="p-2 bg-gray-200 rounded-lg text-gray-700"><Type size={18} /></div>
                                     <h2 className="text-xl font-serif italic text-gray-900">Instructions</h2>
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-3">
-                                        Void Mode Label
-                                    </label>
+                                    <label className="block text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-3">Void Mode Label</label>
                                     <input
                                         type="text"
                                         value={localConfig.instructions.void}
@@ -434,9 +497,7 @@ export default function AdminPage() {
                                     />
                                 </div>
                                 <div className="mt-6">
-                                    <label className="block text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-3">
-                                        Wish Input Placeholder
-                                    </label>
+                                    <label className="block text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-3">Wish Input Placeholder</label>
                                     <input
                                         type="text"
                                         value={localConfig.instructions.wishPlaceholder}
@@ -446,7 +507,6 @@ export default function AdminPage() {
                                 </div>
                             </section>
 
-                            {/* Timings */}
                             <section className="bg-white/60 backdrop-blur-sm rounded-[2.5rem] p-8 shadow-lg border border-white/50">
                                 <div className="flex items-center gap-3 mb-6">
                                     <div className="p-2 bg-gray-200 rounded-lg text-gray-700"><Clock size={18} /></div>
@@ -477,22 +537,9 @@ export default function AdminPage() {
                                             <span className="text-xs text-gray-400">ms</span>
                                         </div>
                                     </div>
-                                    <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-gray-100">
-                                        <label className="text-sm font-bold text-gray-500 uppercase tracking-wide">Settling Time</label>
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                type="number"
-                                                value={localConfig.appTimings.settleTime}
-                                                onChange={(e) => setLocalConfig({ ...localConfig, appTimings: { ...localConfig.appTimings, settleTime: parseInt(e.target.value) } })}
-                                                className="w-20 bg-gray-50 rounded-lg px-2 py-1 text-right font-mono font-bold text-gray-900 outline-none focus:bg-white focus:ring-1 ring-gray-200"
-                                            />
-                                            <span className="text-xs text-gray-400">ms</span>
-                                        </div>
-                                    </div>
                                 </div>
                             </section>
 
-                            {/* EMOTIONAL PALETTE EDITOR */}
                             <section className="col-span-1 md:col-span-2 bg-white/60 backdrop-blur-sm rounded-[2.5rem] p-8 shadow-lg border border-white/50">
                                 <div className="flex items-center gap-3 mb-6">
                                     <div className="p-2 bg-gray-200 rounded-lg text-gray-700"><Palette size={18} /></div>
@@ -515,7 +562,7 @@ export default function AdminPage() {
                                                         setLocalConfig({ ...localConfig, craneColors: newColors })
                                                     }}
                                                     className="w-8 h-8 cursor-pointer opacity-0 absolute"
-                                                    style={{ width: '40px', height: '40px' }} // Overlay on preview
+                                                    style={{ width: '40px', height: '40px' }}
                                                 />
                                                 <div className="flex flex-col">
                                                     <span className="text-[10px] uppercase font-bold text-gray-400">Color Hex</span>
@@ -564,7 +611,6 @@ export default function AdminPage() {
                                 </div>
                             </section>
                         </div>
-
 
                     </div>
                 )}

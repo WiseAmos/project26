@@ -2,18 +2,30 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Global Config: Public Read, Admin Write (Client side blocked, Server side bypasses)
+    // Global Config: Public Read, Admin Write (via Admin SDK Only)
     match /config/global {
       allow read: if true;
-      allow write: if false; // Only Admin SDK can write
+      allow write: if false; 
     }
 
-    // Wishes: Public Create (for wishing), Public Read, No Delete (Admin Deletes via API)
+    // Wishes: Public Read, No Client Write (Must use API for Rate Limiting)
     match /wishes/{wishId} {
       allow read: if true;
-      allow create: if true; // Anyone can wish
+      allow create: if false; // Strict: Must use /api/make-wish
       allow update: if false;
-      allow delete: if false; // Only Admin SDK can delete
+      allow delete: if false;
+    }
+
+    // Analytics: No Client Access (Handled via API)
+    match /analytics_visits/{docId} {
+      allow read: if false;
+      allow write: if false;
+    }
+    
+    // Audit Logs: No Client Access
+    match /wish_audit_logs/{docId} {
+      allow read: if false;
+      allow write: if false;
     }
   }
 }

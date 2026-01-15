@@ -5,7 +5,6 @@ import Scene from '@/components/Scene'
 import IntroOverlay from '@/components/IntroOverlay'
 import WishInput from '@/components/WishInput'
 import { db } from '@/lib/firebase'
-import { collection, addDoc } from 'firebase/firestore'
 
 export default function Home() {
   const [mode, setMode] = useState<'LOADING' | 'INTRO' | 'FOLDING' | 'WISH' | 'VOID'>('LOADING')
@@ -57,16 +56,31 @@ export default function Home() {
     setMode('WISH')
   }
 
-  const handleWishSend = (message: string) => {
+  const handleWishSend = async (message: string) => {
     setLastWish(message) // Store for the "Hero" crane
-    // 1. Save to Firestore (Async - don't await blocking animation)
-    addDoc(collection(db, 'wishes'), {
-      message: message,
-      color: craneColor,
-      timestamp: Date.now()
-    }).catch(err => console.error("Error saving wish:", err)) // Keep catch for error logging
 
-    // 2. Start Release Animation
+    // 1. Save to Firestore via API (Secure)
+    try {
+      const res = await fetch('/api/make-wish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, color: craneColor })
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        console.error("Failed to save wish:", data.error)
+        // We could show a toast here, but for now console error is enough as per UI simplicity
+      }
+    } catch (err) {
+      console.error("Error sending wish:", err)
+    }
+
+    // 2. Start Release Animation regardless of API success (Optimistic UI) 
+    // OR should we fail? Better to show animation so user doesn't feel broken, 
+    // unless it's rate limit. But for the art experience, optimistic is better.
+    // If rate limited, the wish just "flies away" but doesn't land in DB. 
+    // That's acceptable for a poetic anti-spam.
+
     setIsReleasing(true)
 
     // 3. Wait for animation, then switch to Void
