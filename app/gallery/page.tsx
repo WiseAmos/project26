@@ -1,6 +1,6 @@
 'use client'
 
-import { Canvas } from '@react-three/fiber'
+import { Canvas, useThree } from '@react-three/fiber'
 import { Environment, OrbitControls } from '@react-three/drei'
 import { useEffect, useState, useMemo, useRef } from 'react'
 import { db } from '../../lib/firebase'
@@ -57,6 +57,20 @@ const INDICES = [
     12, 13, 16, 12, 16, 15, 12, 17, 14, 12, 15, 17, // Beak Base
     15, 16, 4, 15, 4, 17 // Beak Tip
 ]
+
+function ResponsiveCamera() {
+    const { camera, size } = useThree()
+
+    useEffect(() => {
+        const isMobile = size.width < 768
+        // Move camera back on mobile to see more items
+        // Desktop: 30. Mobile: 60.
+        const targetZ = isMobile ? 55 : 30
+        camera.position.setZ(targetZ)
+    }, [camera, size.width])
+
+    return null
+}
 
 function CranesCloud({ cranes, onSelect }: { cranes: CraneData[], onSelect: (crane: CraneData) => void }) {
     const meshRef = useRef<THREE.InstancedMesh>(null)
@@ -231,6 +245,7 @@ export default function Gallery() {
                 />
 
                 <Environment preset="apartment" />
+                <ResponsiveCamera />
             </Canvas>
 
             {/* Header */}
