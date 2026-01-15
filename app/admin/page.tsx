@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { collection, onSnapshot, deleteDoc, doc, updateDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useConfig, AppConfig, IntroStep } from '@/components/ConfigContext'
-import { Trash2, Plus, Save, Clock, Type, Settings, LayoutGrid, List, Palette, Globe } from 'lucide-react'
+import { Trash2, Plus, Save, Clock, Type, Settings, LayoutGrid, List, Palette, Globe, Shield } from 'lucide-react'
 import { clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 
@@ -82,7 +82,7 @@ function AdminLogin({ onLogin }: { onLogin: () => void }) {
 // -- MAIN DASHBOARD --
 export default function AdminPage() {
     const [isAuth, setIsAuth] = useState(false)
-    const [activeTab, setActiveTab] = useState<'WISHES' | 'CONFIG' | 'TRAFFIC'>('WISHES')
+    const [activeTab, setActiveTab] = useState<'WISHES' | 'CONFIG' | 'TRAFFIC' | 'SECURITY'>('WISHES')
 
     // Config Data
     const { config, updateConfig } = useConfig()
@@ -257,6 +257,15 @@ export default function AdminPage() {
                         <Globe size={16} /> Traffic
                     </button>
                     <button
+                        onClick={() => setActiveTab('SECURITY')}
+                        className={cn(
+                            "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 whitespace-nowrap",
+                            activeTab === 'SECURITY' ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"
+                        )}
+                    >
+                        <Shield size={16} /> Security
+                    </button>
+                    <button
                         onClick={() => setActiveTab('CONFIG')}
                         className={cn(
                             "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 whitespace-nowrap",
@@ -396,6 +405,97 @@ export default function AdminPage() {
                         ) : (
                             <div className="text-center py-20 opacity-50">No data available</div>
                         )}
+                    </div>
+                )}
+
+
+                {/* SECURITY TAB */}
+                {activeTab === 'SECURITY' && localConfig && (
+                    <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
+                        <section className="bg-white/60 backdrop-blur-md rounded-[2.5rem] p-8 shadow-xl border border-white/50">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2 bg-red-100 rounded-lg text-red-700"><Shield size={18} /></div>
+                                <h2 className="text-xl font-serif italic text-gray-900">Security Checks</h2>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                {/* COMPONENT: RATE LIMITS */}
+                                <div className="space-y-4">
+                                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Rate Limiting</h3>
+                                    <div className="bg-white p-4 rounded-2xl border border-gray-200">
+                                        <div className="flex justify-between items-center mb-4">
+                                            <label className="text-sm font-bold text-gray-700">Max Wishes</label>
+                                            <input
+                                                type="number"
+                                                value={localConfig.security?.rateLimitMax || 5}
+                                                onChange={(e) => setLocalConfig({ ...localConfig, security: { ...(localConfig.security || { rateLimitWindowMs: 3600000, blockedIps: [], rateLimitMax: 5 }), rateLimitMax: parseInt(e.target.value) } })}
+                                                className="w-20 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 text-center font-bold"
+                                            />
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <label className="text-sm font-bold text-gray-700">Time Window (ms)</label>
+                                            <input
+                                                type="number"
+                                                value={localConfig.security?.rateLimitWindowMs || 3600000}
+                                                onChange={(e) => setLocalConfig({ ...localConfig, security: { ...(localConfig.security || { rateLimitMax: 5, blockedIps: [], rateLimitWindowMs: 3600000 }), rateLimitWindowMs: parseInt(e.target.value) } })}
+                                                className="w-24 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 text-center font-bold"
+                                            />
+                                        </div>
+                                        <p className="mt-4 text-[10px] text-gray-400">
+                                            Limits {localConfig.security?.rateLimitMax || 5} wishes per {((localConfig.security?.rateLimitWindowMs || 3600000) / 60000).toFixed(0)} minutes per IP.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* COMPONENT: BLOCKLIST */}
+                                <div className="space-y-4">
+                                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">IP Blocklist</h3>
+                                    <div className="bg-white p-4 rounded-2xl border border-gray-200 min-h-[160px] flex flex-col">
+                                        <div className="flex gap-2 mb-4">
+                                            <input
+                                                type="text"
+                                                placeholder="Enter IP (e.g. 192.168.1.1)"
+                                                id="ip-input"
+                                                className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:ring-1 focus:ring-gray-900 outline-none"
+                                            />
+                                            <button
+                                                onClick={() => {
+                                                    const input = document.getElementById('ip-input') as HTMLInputElement
+                                                    if (input.value) {
+                                                        const current = localConfig.security?.blockedIps || []
+                                                        if (!current.includes(input.value)) {
+                                                            const newBlocked = [...current, input.value]
+                                                            setLocalConfig({ ...localConfig, security: { ...(localConfig.security || { rateLimitMax: 5, rateLimitWindowMs: 3600000, blockedIps: [] }), blockedIps: newBlocked } })
+                                                        }
+                                                        input.value = ""
+                                                    }
+                                                }}
+                                                className="bg-red-500 text-white px-3 rounded-lg font-bold text-xs uppercase hover:bg-red-600 transition"
+                                            >
+                                                Block
+                                            </button>
+                                        </div>
+                                        <div className="space-y-2 flex-1 overflow-y-auto max-h-40 scrollbar-thin scrollbar-thumb-gray-200">
+                                            {(localConfig.security?.blockedIps || []).length === 0 && <p className="text-xs text-gray-400 italic text-center py-4">No blocked IPs.</p>}
+                                            {localConfig.security?.blockedIps?.map((ip, i) => (
+                                                <div key={i} className="flex justify-between items-center bg-gray-50 px-3 py-2 rounded-lg">
+                                                    <span className="font-mono text-xs text-red-600 font-bold">{ip}</span>
+                                                    <button
+                                                        onClick={() => {
+                                                            const newBlocked = localConfig.security!.blockedIps!.filter((_, idx) => idx !== i)
+                                                            setLocalConfig({ ...localConfig, security: { ...localConfig.security!, blockedIps: newBlocked } })
+                                                        }}
+                                                        className="text-gray-400 hover:text-red-500 transition-colors"
+                                                    >
+                                                        <Trash2 size={12} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
                     </div>
                 )}
 

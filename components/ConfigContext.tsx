@@ -37,9 +37,19 @@ export interface AppConfig {
         label: string
         placeholder?: string
     }[]
+    security: {
+        rateLimitMax: number
+        rateLimitWindowMs: number
+        blockedIps: string[]
+    }
 }
 
 const DEFAULT_CONFIG: AppConfig = {
+    security: {
+        rateLimitMax: 5,
+        rateLimitWindowMs: 3600000, // 1 hour
+        blockedIps: []
+    },
     introSequence: [
         { text: "Legend says that folding one thousand paper cranes grants a single wish.", duration: 2, hold: 1.5 },
         { text: "I am not folding for a wish.", duration: 2, hold: 1.5 },

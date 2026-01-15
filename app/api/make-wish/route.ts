@@ -13,8 +13,29 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Message required' }, { status: 400 })
         }
 
+        // 0. Load Config (for Dynamic Security)
+        const configSnap = await adminDb.collection('config').doc('global').get()
+        const config = configSnap.data()
+        const security = config?.security || { rateLimitMax: 5, rateLimitWindowMs: 3600000, blockedIps: [] }
+
+        const RATE_LIMIT_Window = security.rateLimitWindowMs
+        const RATE_LIMIT_MAX = security.rateLimitMax
+        const BLOCKED_IPS = security.blockedIps || []
+
         // 1. Get IP
         const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown'
+
+        // 1.5 Check Blocklist
+        if (BLOCKED_IPS.includes(ip)) {
+            console.log(`[SECURITY] Blocked Request from Blocklisted IP: ${ip}`)
+            await adminDb.collection('wish_audit_logs').add({
+                ip,
+                timestamp: Date.now(),
+                action: 'blocked_visit',
+                details: 'IP in Blocklist'
+            })
+            return NextResponse.json({ error: 'Access Denied' }, { status: 403 })
+        }
 
         // 2. Check Rate Limit
         // We query the audit logs for this IP in the last hour
@@ -42,6 +63,13 @@ export async function POST(request: Request) {
         }
 
         if (recentLogs.length >= RATE_LIMIT_MAX) {
+            console.log(`[SECURITY] Rate Limit Exceeded for IP: ${ip}`)
+            await adminDb.collection('wish_audit_logs').add({
+                ip,
+                timestamp: now,
+                action: 'rate_limited',
+                details: `Exceeded ${RATE_LIMIT_MAX} wishes in window`
+            })
             return NextResponse.json({ error: 'Rate limit exceeded. Please wait a while before making another wish.' }, { status: 429 })
         }
 
