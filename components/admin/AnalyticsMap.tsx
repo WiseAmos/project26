@@ -53,8 +53,8 @@ export default function AnalyticsMap({ data = [], recentVisits = [] }: MapProps)
                     <Sphere stroke="#E4E5E6" strokeWidth={0.5} id="sphere" fill="transparent" />
                     <Graticule stroke="#E4E5E6" strokeWidth={0.5} />
                     <Geographies geography={geoUrl}>
-                        {({ geographies }) =>
-                            geographies.map((geo) => {
+                        {({ geographies }: { geographies: any[] }) =>
+                            geographies.map((geo: any) => {
                                 const d = data.find((s) => s.name === geo.properties.name || s.name === geo.id)
                                 const isLive = liveCountries.has(d?.name) || liveCountries.has(geo.properties.name)
 
