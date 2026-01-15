@@ -32,11 +32,6 @@ export const metadata: Metadata = {
     description: "Fold a digital paper crane. Release your unspoken words.",
     images: ["/icon.png"],
   },
-  icons: {
-    icon: "/icon.png",
-    shortcut: "/icon.png",
-    apple: "/icon.png",
-  },
 };
 
 export default function RootLayout({
