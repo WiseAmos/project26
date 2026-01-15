@@ -82,7 +82,10 @@ export default function Scene({ mode, onFoldComplete, onSelectWish, onFoldProgre
 
                 {/* USER CRANE (Visible during folding, wish input, AND void/gallery) 
                     Kept in VOID so the flown-away crane remains visible in the distance */}
-                {(mode === 'INTRO' || mode === 'FOLDING' || mode === 'WISH' || mode === 'VOID' || mode === 'LOADING') && (
+                {/* USER CRANE (Visible during folding, wish input, AND void/gallery IF releasing) 
+                    Only show in VOID if we actually have a lastWish (meaning we just released one).
+                    If jumping straight to VOID (View Gallery), hide this pivot crane. */}
+                {(mode === 'INTRO' || mode === 'FOLDING' || mode === 'WISH' || mode === 'LOADING' || (mode === 'VOID' && lastWish)) && (
                     <FoldingContent
                         key="folding-stage"
                         onComplete={onFoldComplete}
