@@ -35,6 +35,7 @@ export interface AppConfig {
         id: string
         color: string
         label: string
+        placeholder?: string
     }[]
 }
 
@@ -48,17 +49,17 @@ const DEFAULT_CONFIG: AppConfig = {
     instructions: {
         folding: ["Drag right to start folding", "Folding...", "Ready"],
         void: "Drag to look around • Scroll to zoom • Tap a crane",
-        wishPlaceholder: "Write your unwished wish..."
+        wishPlaceholder: "Tap here to write your unspoken wish..."
     },
     appTimings: {
         releaseDelay: 2500,
         settleTime: 1800
     },
     craneColors: [
-        { id: 'grey', color: '#808080', label: 'The Unsent' },
-        { id: 'blue', color: '#A4C2F4', label: 'The Regret' },
-        { id: 'red', color: '#E06666', label: 'The Yearning' },
-        { id: 'black', color: '#000000', label: 'The Closure' },
+        { id: 'grey', color: '#808080', label: 'The Unsent', placeholder: "Write the message you deleted..." },
+        { id: 'blue', color: '#A4C2F4', label: 'The Regret', placeholder: "What would you do differently?" },
+        { id: 'red', color: '#E06666', label: 'The Yearning', placeholder: "Tell them you miss them..." },
+        { id: 'black', color: '#000000', label: 'The Closure', placeholder: "Say your final goodbye..." },
     ]
 }
 

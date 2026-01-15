@@ -292,12 +292,13 @@ export function PaperFoldingEngine({ step, progress, isReleasing, lastWish, onSe
             groupRef.current.rotation.x -= delta * 0.5
             groupRef.current.rotation.z += delta * 0.2
 
-            // Shrink effect to simulate "fading" into the distance/crowd
-            // Adjusted: Stop shrinking at 1.0 to match the flock scale (1.0 - 1.5)
+            // Dynamic Scaling: Transition from Folding Scale (0.85) to World Scale (1.2)
+            // This ensures it doesn't look tiny in the gallery, but fits the screen during folding.
             const currentScale = groupRef.current.scale.x
-            if (currentScale > 1.0) {
-                const shrinkFactor = delta * 0.2 // Subtle shrink from 1.2 to 1.0
-                groupRef.current.scale.subScalar(shrinkFactor)
+            if (currentScale < 1.25) {
+                const growFactor = delta * 0.5 // Grow speed
+                const newScale = Math.min(currentScale + growFactor, 1.25)
+                groupRef.current.scale.setScalar(newScale)
             }
         }
 

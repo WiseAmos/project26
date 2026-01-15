@@ -23,7 +23,7 @@ export default function Home() {
 
   // Last submitted wish (for the user's crane interaction)
   const [lastWish, setLastWish] = useState<string | null>(null)
-  const [craneColor, setCraneColor] = useState('#e0e0e0') // Default Grey
+  const [craneColor, setCraneColor] = useState('#808080') // Default to 'The Unsent'
 
   // Check Local Storage on Mount
   useEffect(() => {

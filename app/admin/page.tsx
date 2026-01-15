@@ -542,6 +542,21 @@ export default function AdminPage() {
                                                         setLocalConfig({ ...localConfig, craneColors: newColors })
                                                     }}
                                                     className="w-full text-sm font-medium text-gray-900 border-b border-gray-200 focus:border-gray-900 outline-none py-1 transition-colors"
+                                                    placeholder="Label (e.g. Unsent)"
+                                                />
+                                            </div>
+                                            <div className="flex flex-col gap-1">
+                                                <label className="text-[10px] uppercase font-bold text-gray-400">Placeholder Hint</label>
+                                                <input
+                                                    type="text"
+                                                    value={colorItem.placeholder || ''}
+                                                    onChange={(e) => {
+                                                        const newColors = [...(localConfig.craneColors || [])]
+                                                        newColors[index] = { ...newColors[index], placeholder: e.target.value }
+                                                        setLocalConfig({ ...localConfig, craneColors: newColors })
+                                                    }}
+                                                    className="w-full text-sm font-medium text-gray-500 border-b border-gray-200 focus:border-gray-900 outline-none py-1 transition-colors italic"
+                                                    placeholder="Custom placeholder..."
                                                 />
                                             </div>
                                         </div>
