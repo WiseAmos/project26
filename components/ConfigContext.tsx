@@ -83,26 +83,43 @@ interface ConfigContextType {
 const ConfigContext = createContext<ConfigContextType | undefined>(undefined)
 
 export function ConfigProvider({ children }: { children: React.ReactNode }) {
-    const [config, setConfig] = useState<AppConfig>(DEFAULT_CONFIG)
+    const [config, setConfig] = useState<AppConfig>(() => {
+        // Hydrate from localStorage if available to avoid FOUC
+        if (typeof window !== 'undefined') {
+            const cached = localStorage.getItem('paper_cranes_config')
+            if (cached) {
+                try {
+                    return JSON.parse(cached)
+                } catch (e) {
+                    console.error("Config cache warn:", e)
+                }
+            }
+        }
+        return DEFAULT_CONFIG
+    })
 
     useEffect(() => {
         // Subscribe to Firestore "config/global"
         const unsub = onSnapshot(doc(db, 'config', 'global'), (docSnap) => {
             if (docSnap.exists()) {
-                // Merge with default to ensure no missing fields if schema updates
-                // Deep merge needed? For now simple spread is okay if structure is flat-ish.
-                // But AppConfig is nested. Ideally use deep merge or just trust DB.
-                // Let's do a safe shallow merge of top keys.
                 const data = docSnap.data() as Partial<AppConfig>
-                setConfig(prev => ({
-                    ...prev,
-                    ...data,
-                    instructions: { ...prev.instructions, ...data.instructions },
-                    appTimings: { ...prev.appTimings, ...data.appTimings },
-                    introSequence: data.introSequence || prev.introSequence,
-                    craneColors: data.craneColors || prev.craneColors,
-                    security: data.security || prev.security
-                }))
+                setConfig(prev => {
+                    const nextConfig = {
+                        ...prev,
+                        ...data,
+                        instructions: { ...prev.instructions, ...data.instructions },
+                        appTimings: { ...prev.appTimings, ...data.appTimings },
+                        introSequence: data.introSequence || prev.introSequence,
+                        craneColors: data.craneColors || prev.craneColors,
+                        security: data.security || prev.security
+                    }
+
+                    // Persist for next load
+                    if (typeof window !== 'undefined') {
+                        localStorage.setItem('paper_cranes_config', JSON.stringify(nextConfig))
+                    }
+                    return nextConfig
+                })
             } else {
                 console.log("No config found, using defaults. Creating doc...")
                 setDoc(doc(db, 'config', 'global'), DEFAULT_CONFIG).catch(err => console.error(err))

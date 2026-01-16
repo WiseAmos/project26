@@ -5,8 +5,10 @@ import Scene from '@/components/Scene'
 import IntroOverlay from '@/components/IntroOverlay'
 import WishInput from '@/components/WishInput'
 import { db } from '@/lib/firebase'
+import { useConfig } from '@/components/ConfigContext'
 
 export default function Home() {
+  const { config } = useConfig()
   const [mode, setMode] = useState<'LOADING' | 'INTRO' | 'FOLDING' | 'WISH' | 'VOID'>('LOADING')
   const [selectedWish, setSelectedWish] = useState<string | null>(null)
   const [showInstructions, setShowInstructions] = useState(false)
@@ -22,7 +24,23 @@ export default function Home() {
 
   // Last submitted wish (for the user's crane interaction)
   const [lastWish, setLastWish] = useState<string | null>(null)
-  const [craneColor, setCraneColor] = useState('#808080') // Default to 'The Unsent'
+
+  // Default to first color in config immediately if available
+  const [craneColor, setCraneColor] = useState(() => {
+    // If config is already hydrated (from localStorage), user it
+    if (config?.craneColors?.length > 0) return config.craneColors[0].color
+    return '#808080'
+  })
+
+  // Sync Color with Config (if default became invalid due to palette change)
+  useEffect(() => {
+    if (config?.craneColors?.length > 0) {
+      const isValid = config.craneColors.some(c => c.color === craneColor)
+      if (!isValid) {
+        setCraneColor(config.craneColors[0].color)
+      }
+    }
+  }, [config, craneColor])
 
   // Check Local Storage on Mount
   useEffect(() => {
@@ -189,6 +207,20 @@ export default function Home() {
         <IntroOverlay
           onComplete={() => setMode('FOLDING')}
           onGallery={() => setMode('VOID')}
+        />
+      )}
+
+      {/* FADE CURTAIN (For Returning Users / Initial Load) */}
+      {/* If LOADING, it's solid. If FOLDING, it fades out. If INTRO, it's not rendered (IntroOverlay takes over) */}
+      {mode !== 'INTRO' && (
+        <div
+          className={`fixed inset-0 z-[60] bg-[#f4f1ea] pointer-events-none transition-opacity duration-[2000ms] ease-in-out ${mode === 'LOADING' ? 'opacity-100' : 'opacity-0'}`}
+          onTransitionEnd={(e) => {
+            // Optional: remove from DOM if we wanted better perf, but opacity 0 pointer-events-none is fine for now
+            if (mode === 'FOLDING') {
+              // e.currentTarget.style.display = 'none' 
+            }
+          }}
         />
       )}
 
