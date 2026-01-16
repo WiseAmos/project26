@@ -100,7 +100,8 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
                     instructions: { ...prev.instructions, ...data.instructions },
                     appTimings: { ...prev.appTimings, ...data.appTimings },
                     introSequence: data.introSequence || prev.introSequence,
-                    craneColors: data.craneColors || prev.craneColors
+                    craneColors: data.craneColors || prev.craneColors,
+                    security: data.security || prev.security
                 }))
             } else {
                 console.log("No config found, using defaults. Creating doc...")

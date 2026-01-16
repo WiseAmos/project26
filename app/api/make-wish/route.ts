@@ -4,6 +4,11 @@ import { adminDb } from '@/lib/firebase-admin'
 const RATE_LIMIT_Window = 60 * 60 * 1000 // 1 Hour
 const RATE_LIMIT_MAX = 5 // Max 5 wishes per hour per IP
 
+// Simple in-memory cache for Config (Lambda/Serverless warm usage)
+let cachedConfig: any = null
+let lastConfigFetch = 0
+const CONFIG_CACHE_TTL = 60000 // 60 seconds
+
 export async function POST(request: Request) {
     try {
         const body = await request.json()
@@ -13,80 +18,89 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Message required' }, { status: 400 })
         }
 
-        // 0. Load Config (for Dynamic Security)
-        const configSnap = await adminDb.collection('config').doc('global').get()
-        const config = configSnap.data()
-        const security = config?.security || { rateLimitMax: 5, rateLimitWindowMs: 3600000, blockedIps: [] }
+        const now = Date.now()
 
-        const RATE_LIMIT_Window = security.rateLimitWindowMs
-        const RATE_LIMIT_MAX = security.rateLimitMax
+        // 0. Load Config (Cached)
+        if (!cachedConfig || (now - lastConfigFetch > CONFIG_CACHE_TTL)) {
+            try {
+                const configSnap = await adminDb.collection('config').doc('global').get()
+                cachedConfig = configSnap.data()
+                lastConfigFetch = now
+            } catch (e) {
+                console.error("Config fetch failed, using fallback/cache if available", e)
+            }
+        }
+
+        const security = cachedConfig?.security || { rateLimitMax: 5, rateLimitWindowMs: 3600000, blockedIps: [] }
+        const RATE_LIMIT_Window = security.rateLimitWindowMs || 3600000
+        const RATE_LIMIT_MAX = security.rateLimitMax || 5
         const BLOCKED_IPS = security.blockedIps || []
 
         // 1. Get IP
-        const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown'
+        const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || '127.0.0.1'
 
         // 1.5 Check Blocklist
         if (BLOCKED_IPS.includes(ip)) {
-            console.log(`[SECURITY] Blocked Request from Blocklisted IP: ${ip}`)
-            await adminDb.collection('wish_audit_logs').add({
+            // Log security event (Fire and forget, don't await blocking response logic too much, but we should log it)
+            adminDb.collection('wish_audit_logs').add({
                 ip,
-                timestamp: Date.now(),
+                timestamp: now,
                 action: 'blocked_visit',
                 details: 'IP in Blocklist'
-            })
+            }).catch(e => console.error("Audit log failed", e))
+
             return NextResponse.json({ error: 'Access Denied' }, { status: 403 })
         }
 
-        // 2. Check Rate Limit
-        // We query the audit logs for this IP in the last hour
-        const now = Date.now()
+        // 2. Check Rate Limit (Count Only)
         const windowStart = now - RATE_LIMIT_Window
+        let rateCount = 0
 
-        // Note: This requires a composite index on [ip, timestamp], or we just query by ip and filter in memory if volume is low.
-        // Assuming low volume, we query by IP and limit/sort.
-        // Or better: just add a "timestamp" > windowStart clause.
-        // Using Admin SDK we can do this easily.
-
-        let recentLogs = []
         try {
-            const logsSnap = await adminDb.collection('wish_audit_logs')
+            // Optimization: Use count() instead of getting all docs
+            const logsCount = await adminDb.collection('wish_audit_logs')
                 .where('ip', '==', ip)
                 .where('timestamp', '>', windowStart)
+                .count()
                 .get()
 
-            recentLogs = logsSnap.docs
+            rateCount = logsCount.data().count
         } catch (e) {
             console.error("Rate limit check failed:", e)
-            // If index is missing or query fails, we might fail open or closed.
-            // For now, let's fail open but log it, to avoid blocking legit users if DB is quirky.
-            // But to be secure, we should probably just proceed.
+            // Fail open but log
         }
 
-        if (recentLogs.length >= RATE_LIMIT_MAX) {
-            console.log(`[SECURITY] Rate Limit Exceeded for IP: ${ip}`)
-            await adminDb.collection('wish_audit_logs').add({
+        if (rateCount >= RATE_LIMIT_MAX) {
+            adminDb.collection('wish_audit_logs').add({
                 ip,
                 timestamp: now,
                 action: 'rate_limited',
-                details: `Exceeded ${RATE_LIMIT_MAX} wishes in window`
-            })
-            return NextResponse.json({ error: 'Rate limit exceeded. Please wait a while before making another wish.' }, { status: 429 })
+                details: `Exceeded ${RATE_LIMIT_MAX} wishes`
+            }).catch(e => console.error("Audit log failed", e))
+
+            return NextResponse.json({ error: 'Rate limit exceeded.' }, { status: 429 })
         }
 
-        // 3. Create Wish (Public)
-        const wishRef = await adminDb.collection('wishes').add({
+        // 3. Parallel Execution: Create Wish + Log Audit
+        // We can await both, or just await wish and let audit run (but safer to await both for consistency)
+        const wishData = {
             message: message.trim(),
             color: color || '#808080',
             timestamp: now
-        })
+        }
 
-        // 4. Log Audit (Private)
-        await adminDb.collection('wish_audit_logs').add({
+        const wishRef = adminDb.collection('wishes').doc() // Generate ID client-side style but on server
+
+        const writePromise = wishRef.set(wishData)
+
+        const auditPromise = adminDb.collection('wish_audit_logs').add({
             wishId: wishRef.id,
             ip: ip,
             timestamp: now,
             action: 'create_wish'
         })
+
+        await Promise.all([writePromise, auditPromise])
 
         return NextResponse.json({ success: true, id: wishRef.id })
 

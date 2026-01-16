@@ -1,29 +1,24 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { adminDb } from '@/lib/firebase-admin'
 
-export async function POST(req: NextRequest) {
+const ADMIN_KEY = process.env.ADMIN_PASSWORD || '26102006'
+
+export async function POST(request: Request) {
     try {
-        const newConfig = await req.json()
-
-
-        // AUTH CHECK
-        const authHeader = req.headers.get('x-admin-key')
-        if (authHeader !== (process.env.ADMIN_PASSWORD || '26102006')) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+        const authHeader = request.headers.get('x-admin-key')
+        if (authHeader !== ADMIN_KEY) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        if (!newConfig || typeof newConfig !== 'object') {
-            return NextResponse.json({ error: "Invalid config" }, { status: 400 })
-        }
+        const newConfig = await request.json()
 
-        // Validate basic structure if needed, or trust Admin Input (Gatekeeper protected frontend)
-        // Ideally we check if 'introSequence' exists etc.
-
+        // Remove undefined fields if any, or just set the doc directly.
+        // We put this in 'config/global'
         await adminDb.collection('config').doc('global').set(newConfig, { merge: true })
 
         return NextResponse.json({ success: true })
     } catch (error) {
-        console.error("Update Config Error:", error)
-        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
+        console.error("Config Update Error:", error)
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
     }
 }

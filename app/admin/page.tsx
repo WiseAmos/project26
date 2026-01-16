@@ -156,6 +156,40 @@ export default function AdminPage() {
         }
     }
 
+    const handleClearLogs = async (target: 'traffic' | 'security') => {
+        if (!confirm(`Are you sure you want to clear ${target.toUpperCase()} logs? This cannot be undone.`)) return
+
+        try {
+            const res = await fetch('/api/admin/clear-logs', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-admin-key': '26102006'
+                },
+                body: JSON.stringify({ target })
+            })
+            const data = await res.json()
+            if (data.success) {
+                alert(data.message)
+                if (target === 'traffic') {
+                    // Reload analytics
+                    setIsLoadingAnalytics(true)
+                    fetch('/api/admin/analytics', { headers: { 'x-admin-key': '26102006' } })
+                        .then(res => res.json())
+                        .then(data => {
+                            setAnalyticsData(data)
+                            setIsLoadingAnalytics(false)
+                        })
+                }
+            } else {
+                alert("Failed: " + data.error)
+            }
+        } catch (e) {
+            console.error(e)
+            alert("Error clearing logs")
+        }
+    }
+
     const handleBulkImport = async () => {
         const lines = bulkInput.split('\n').map(l => l.trim()).filter(l => l.length > 0)
         if (lines.length === 0) return
@@ -376,11 +410,19 @@ export default function AdminPage() {
                                 <h2 className="text-4xl font-serif italic text-gray-900 mb-2">Global Traffic</h2>
                                 <p className="text-gray-500 font-medium">Tracking the journey of digital cranes across the world.</p>
                             </div>
-                            <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-200">
-                                <span className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Total Visits</span>
-                                <span className="text-2xl font-serif font-bold text-gray-900">
-                                    {analyticsData ? analyticsData.totalVisits : '...'}
-                                </span>
+                            <div className="flex gap-4 items-center">
+                                <button
+                                    onClick={() => handleClearLogs('traffic')}
+                                    className="bg-red-50 text-red-500 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-red-500 hover:text-white transition-all"
+                                >
+                                    Clear History
+                                </button>
+                                <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-200">
+                                    <span className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Total Visits</span>
+                                    <span className="text-2xl font-serif font-bold text-gray-900">
+                                        {analyticsData ? analyticsData.totalVisits : '...'}
+                                    </span>
+                                </div>
                             </div>
                         </div>
 
@@ -413,9 +455,17 @@ export default function AdminPage() {
                 {activeTab === 'SECURITY' && localConfig && (
                     <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
                         <section className="bg-white/60 backdrop-blur-md rounded-[2.5rem] p-8 shadow-xl border border-white/50">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="p-2 bg-red-100 rounded-lg text-red-700"><Shield size={18} /></div>
-                                <h2 className="text-xl font-serif italic text-gray-900">Security Checks</h2>
+                            <div className="flex items-center justify-between mb-6">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-red-100 rounded-lg text-red-700"><Shield size={18} /></div>
+                                    <h2 className="text-xl font-serif italic text-gray-900">Security Checks</h2>
+                                </div>
+                                <button
+                                    onClick={() => handleClearLogs('security')}
+                                    className="bg-white text-gray-500 hover:text-red-500 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider border border-gray-200 hover:border-red-200 transition-all"
+                                >
+                                    Clear Audit Logs
+                                </button>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
