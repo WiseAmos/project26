@@ -12,6 +12,31 @@ interface MapProps {
     recentVisits?: any[]
 }
 
+// Helper to map ISO-2 (Vercel) to Map Name (TopoJSON)
+const ISO_MAP: Record<string, string> = {
+    'US': 'United States of America',
+    'GB': 'United Kingdom',
+    'CN': 'China',
+    'JP': 'Japan',
+    'DE': 'Germany',
+    'FR': 'France',
+    'IN': 'India',
+    'BR': 'Brazil',
+    'RU': 'Russia',
+    'CA': 'Canada',
+    'AU': 'Australia',
+    'SG': 'Singapore',
+    'MY': 'Malaysia',
+    'ID': 'Indonesia',
+    'PH': 'Philippines',
+    'VN': 'Vietnam',
+    'TH': 'Thailand',
+    'UNKNOWN': 'United States of America', // Map unknown/local to US for visualization
+    'Unknown': 'United States of America',
+    '127.0.0.1': 'United States of America',
+    'Localhost': 'United States of America'
+}
+
 export default function AnalyticsMap({ data = [], recentVisits = [] }: MapProps) {
     // Calculate Live Users (active < 5 mins ago)
     const liveCount = useMemo(() => {
@@ -19,11 +44,16 @@ export default function AnalyticsMap({ data = [], recentVisits = [] }: MapProps)
         return recentVisits.filter(v => new Date(v.timestamp).getTime() > fiveMinsAgo).length
     }, [recentVisits])
 
-    // Live Countries Set
+    // Live Countries Set (Mapped)
     const liveCountries = useMemo(() => {
         const fiveMinsAgo = Date.now() - 5 * 60 * 1000
         const active = recentVisits.filter(v => new Date(v.timestamp).getTime() > fiveMinsAgo)
-        return new Set(active.map(v => v.country)) // e.g. "US", "JP"
+        const activeNames = new Set<string>()
+        active.forEach(v => {
+            const mapped = ISO_MAP[v.country] || ISO_MAP[v.country?.toUpperCase()] || v.country
+            activeNames.add(mapped)
+        })
+        return activeNames
     }, [recentVisits])
 
     const colorScale = scaleLinear<string>()
@@ -55,14 +85,18 @@ export default function AnalyticsMap({ data = [], recentVisits = [] }: MapProps)
                     <Geographies geography={geoUrl}>
                         {({ geographies }: { geographies: any[] }) =>
                             geographies.map((geo: any) => {
-                                const d = data.find((s) => s.name === geo.properties.name || s.name === geo.id)
-                                const isLive = liveCountries.has(d?.name) || liveCountries.has(geo.properties.name)
+                                const geoName = geo.properties.name
+
+                                // Check if this country is in our data set
+                                // data.name is ISO-2 usually if raw from API, so map it
+                                const countryData = data.find(d => (ISO_MAP[d.name] || ISO_MAP[d.name?.toUpperCase()] || d.name) === geoName)
+                                const isLive = liveCountries.has(geoName)
 
                                 return (
                                     <Geography
                                         key={geo.rsmKey}
                                         geography={geo}
-                                        fill={isLive ? "#86efac" : (d ? colorScale(d.count) : "#D6D6DA")} // Green if live
+                                        fill={isLive ? "#86efac" : (countryData ? colorScale(countryData.count) : "#D6D6DA")} // Green if live
                                         stroke={isLive ? "#22c55e" : "#FFFFFF"}
                                         strokeWidth={isLive ? 1 : 0.5}
                                         style={{
