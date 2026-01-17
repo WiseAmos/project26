@@ -8,7 +8,7 @@ import { db } from '@/lib/firebase'
 import { useConfig } from '@/components/ConfigContext'
 
 export default function Home() {
-  const { config } = useConfig()
+  const { config, isLoaded } = useConfig()
   const [mode, setMode] = useState<'LOADING' | 'INTRO' | 'FOLDING' | 'WISH' | 'VOID'>('LOADING')
   const [selectedWish, setSelectedWish] = useState<string | null>(null)
   const [showInstructions, setShowInstructions] = useState(false)
@@ -42,8 +42,10 @@ export default function Home() {
     }
   }, [config, craneColor])
 
-  // Check Local Storage on Mount
+  // Check Local Storage on Mount - BUT WAIT FOR CONFIG
   useEffect(() => {
+    if (!isLoaded) return // Wait for remote config to be ready
+
     const checkVisit = () => {
       const lastVisit = localStorage.getItem('paper_cranes_last_visit')
       const now = Date.now()
@@ -68,7 +70,7 @@ export default function Home() {
     }
 
     checkVisit()
-  }, [])
+  }, [isLoaded])
 
   const handleFoldComplete = () => {
     setMode('WISH')

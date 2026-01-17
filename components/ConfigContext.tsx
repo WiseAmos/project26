@@ -76,6 +76,7 @@ const DEFAULT_CONFIG: AppConfig = {
 // -- CONTEXT --
 interface ConfigContextType {
     config: AppConfig
+    isLoaded: boolean
     updateConfig: (newConfig: AppConfig) => Promise<void>
     resetConfig: () => Promise<void>
 }
@@ -83,6 +84,7 @@ interface ConfigContextType {
 const ConfigContext = createContext<ConfigContextType | undefined>(undefined)
 
 export function ConfigProvider({ children }: { children: React.ReactNode }) {
+    const [isLoaded, setIsLoaded] = useState(false)
     const [config, setConfig] = useState<AppConfig>(() => {
         // Hydrate from localStorage if available to avoid FOUC
         if (typeof window !== 'undefined') {
@@ -124,8 +126,12 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
                 console.log("No config found, using defaults. Creating doc...")
                 setDoc(doc(db, 'config', 'global'), DEFAULT_CONFIG).catch(err => console.error(err))
             }
+
+            // Mark as loaded after first successful fetch (or default fallback)
+            setIsLoaded(true)
         }, (err) => {
             console.error("Config fetch error:", err)
+            setIsLoaded(true) // Still unblock app even if fetch fails
         })
 
         return () => unsub()
@@ -155,7 +161,7 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
     }
 
     return (
-        <ConfigContext.Provider value={{ config, updateConfig, resetConfig }}>
+        <ConfigContext.Provider value={{ config, isLoaded, updateConfig, resetConfig }}>
             {children}
         </ConfigContext.Provider>
     )

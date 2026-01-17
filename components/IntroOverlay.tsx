@@ -1,6 +1,7 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
 import { useConfig } from './ConfigContext'
+import type { IntroStep } from './ConfigContext'
 
 interface IntroProps {
     onComplete: () => void
@@ -11,13 +12,14 @@ export default function IntroOverlay({ onComplete, onGallery }: IntroProps) {
     const containerRef = useRef<HTMLDivElement>(null)
     const textsRef = useRef<(HTMLParagraphElement | null)[]>([])
     const { config } = useConfig()
-    const { introSequence } = config
-
-    // Stable key to prevent restarts on config reference change
-    const sequenceKey = JSON.stringify(introSequence)
+    // LOCK-IN STRATEGY:
+    // Capture the intro sequence ONCE on mount.
+    // Even if config updates in the background (Firestore connection),
+    // we ignore it to prevent the animation from restarting or jittering.
+    const [sequence] = useState<IntroStep[]>(config.introSequence)
 
     useEffect(() => {
-        if (!introSequence || introSequence.length === 0) {
+        if (!sequence || sequence.length === 0) {
             onComplete()
             return
         }
@@ -40,7 +42,7 @@ export default function IntroOverlay({ onComplete, onGallery }: IntroProps) {
         })
 
         // Build Sequence Dynamically
-        introSequence.forEach((step, index) => {
+        sequence.forEach((step, index) => {
             const el = textsRef.current[index]
             if (!el) return
 
@@ -65,7 +67,7 @@ export default function IntroOverlay({ onComplete, onGallery }: IntroProps) {
         return () => {
             tl.kill()
         }
-    }, [sequenceKey, onComplete])
+    }, []) // Empty dependency = Run ONCE on mount. Never restart.
 
     return (
         <div
@@ -73,7 +75,7 @@ export default function IntroOverlay({ onComplete, onGallery }: IntroProps) {
             className="fixed inset-0 w-screen h-screen flex flex-col items-center justify-center bg-[#f4f1ea] z-[50] overflow-hidden"
         >
             <div className="relative w-full max-w-xl h-40 flex items-center justify-center text-[#333]">
-                {introSequence.map((step, i) => (
+                {sequence.map((step, i) => (
                     <p
                         key={i}
                         ref={el => { textsRef.current[i] = el }}
@@ -103,3 +105,4 @@ export default function IntroOverlay({ onComplete, onGallery }: IntroProps) {
         </div>
     )
 }
+// Removed helper function as logic is simplified
