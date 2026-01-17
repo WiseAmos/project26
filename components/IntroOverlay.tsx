@@ -13,6 +13,9 @@ export default function IntroOverlay({ onComplete, onGallery }: IntroProps) {
     const { config } = useConfig()
     const { introSequence } = config
 
+    // Stable key to prevent restarts on config reference change
+    const sequenceKey = JSON.stringify(introSequence)
+
     useEffect(() => {
         if (!introSequence || introSequence.length === 0) {
             onComplete()
@@ -37,10 +40,6 @@ export default function IntroOverlay({ onComplete, onGallery }: IntroProps) {
         })
 
         // Build Sequence Dynamically
-        // We want them to overlap slightly? The original had `"-=0.5"`.
-        // Let's assume standard sequential for now, or use a fixed overlap.
-        // Or we can add an `overlap` field to config later. For now, hardcode small overlap.
-
         introSequence.forEach((step, index) => {
             const el = textsRef.current[index]
             if (!el) return
@@ -55,12 +54,6 @@ export default function IntroOverlay({ onComplete, onGallery }: IntroProps) {
             }, position)
 
             // Hold then Fade Out
-            // The 'hold' in config usually implies "Stay Visible".
-            // My Plan said: Hold = Wait before fading out.
-            // Original: duration: 1.5 (fade out), delay: 1.5 (hold)
-            // So let's use step.hold as the DELAY before fade out starts.
-            // And use a standard short fade out time (e.g. 1.5s) or make it proportional?
-            // Let's use 1.5s as standard fade out for now.
             tl.to(el, {
                 autoAlpha: 0,
                 y: -20,
@@ -72,7 +65,7 @@ export default function IntroOverlay({ onComplete, onGallery }: IntroProps) {
         return () => {
             tl.kill()
         }
-    }, [introSequence, onComplete])
+    }, [sequenceKey, onComplete])
 
     return (
         <div
