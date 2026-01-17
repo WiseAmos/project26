@@ -23,20 +23,42 @@ export default function WishInput({ onSend, onColorChange, selectedColor }: Wish
 
 
     useEffect(() => {
-        // Auto-focus after a longer delay (4.5s) if no interaction
+        // Attempt immediate focus (Desktop / Android sometimes accepts this)
+        const immediateTimer = setTimeout(() => {
+            if (!hasInteracted && inputRef.current) {
+                inputRef.current.focus()
+            }
+        }, 100)
+
+        // Mobile Friendly "Tap Anywhere to Focus" Hack
+        // iOS requires user interaction to open keyboard. 
+        // We capture the first touch anywhere and channel it to the input.
+        const handleFirstTouch = () => {
+            if (!hasInteracted && inputRef.current) {
+                inputRef.current.focus()
+                setHasInteracted(true)
+            }
+        }
+        window.addEventListener('touchstart', handleFirstTouch, { once: true })
+        window.addEventListener('click', handleFirstTouch, { once: true })
+
+        // Fallback: Auto-focus after a longer delay (4.5s) if still no interaction (Desktop mainly)
         const timer = setTimeout(() => {
             if (!hasInteracted && inputRef.current) {
                 inputRef.current.focus()
-                setIsActive(true)
+                setIsActive(true) // Ensure UI is visible
             }
         }, 4500)
 
-        // Initial fade in
+        // Initial fade in of UI
         const fadeTimer = setTimeout(() => setIsActive(true), 1000)
 
         return () => {
+            clearTimeout(immediateTimer)
             clearTimeout(timer)
             clearTimeout(fadeTimer)
+            window.removeEventListener('touchstart', handleFirstTouch)
+            window.removeEventListener('click', handleFirstTouch)
         }
     }, [hasInteracted])
 
