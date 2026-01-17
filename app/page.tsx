@@ -247,8 +247,8 @@ export default function Home() {
           style={{ zIndex: 10 }}
         >
           <div className="text-center">
-            <p className="text-[#333] text-xs tracking-[0.3em] uppercase animate-pulse">
-              {getFoldInstruction()}
+            <p className="text-[#333] text-xs tracking-[0.3em] uppercase">
+              <FadingText text={getFoldInstruction() || ""} />
             </p>
           </div>
         </div>
@@ -333,5 +333,31 @@ export default function Home() {
         </div>
       )}
     </main>
+  )
+}
+
+// Helper Component for Fading Text
+function FadingText({ text }: { text: string }) {
+  const [display, setDisplay] = useState(text)
+  const [opacity, setOpacity] = useState(1)
+
+  useEffect(() => {
+    if (text !== display) {
+      setOpacity(0) // Fade out
+      const timer = setTimeout(() => {
+        setDisplay(text)
+        setOpacity(1) // Fade in
+      }, 300) // 300ms matches standard transition duration
+      return () => clearTimeout(timer)
+    }
+  }, [text, display])
+
+  return (
+    <span
+      className="transition-opacity duration-500 ease-in-out block"
+      style={{ opacity }}
+    >
+      {display}
+    </span>
   )
 }

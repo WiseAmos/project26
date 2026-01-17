@@ -417,11 +417,19 @@ export default function AdminPage() {
                                 >
                                     Clear History
                                 </button>
-                                <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-200">
-                                    <span className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Total Visits</span>
-                                    <span className="text-2xl font-serif font-bold text-gray-900">
-                                        {analyticsData ? analyticsData.totalVisits : '...'}
-                                    </span>
+                                <div className="flex gap-4">
+                                    <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-200">
+                                        <span className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Unique IPs</span>
+                                        <span className="text-2xl font-serif font-bold text-gray-900">
+                                            {analyticsData ? analyticsData.uniqueVisitors || 0 : '...'}
+                                        </span>
+                                    </div>
+                                    <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-200">
+                                        <span className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Total Visits</span>
+                                        <span className="text-2xl font-serif font-bold text-gray-900">
+                                            {analyticsData ? analyticsData.totalVisits : '...'}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -452,337 +460,343 @@ export default function AdminPage() {
 
 
                 {/* SECURITY TAB */}
-                {activeTab === 'SECURITY' && localConfig && (
-                    <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
-                        <section className="bg-white/60 backdrop-blur-md rounded-[2.5rem] p-8 shadow-xl border border-white/50">
-                            <div className="flex items-center justify-between mb-6">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-red-100 rounded-lg text-red-700"><Shield size={18} /></div>
-                                    <h2 className="text-xl font-serif italic text-gray-900">Security Checks</h2>
-                                </div>
-                                <button
-                                    onClick={() => handleClearLogs('security')}
-                                    className="bg-white text-gray-500 hover:text-red-500 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider border border-gray-200 hover:border-red-200 transition-all"
-                                >
-                                    Clear Audit Logs
-                                </button>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                {/* COMPONENT: RATE LIMITS */}
-                                <div className="space-y-4">
-                                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Rate Limiting</h3>
-                                    <div className="bg-white p-4 rounded-2xl border border-gray-200">
-                                        <div className="flex justify-between items-center mb-4">
-                                            <label className="text-sm font-bold text-gray-700">Max Wishes</label>
-                                            <input
-                                                type="number"
-                                                value={localConfig.security?.rateLimitMax || 5}
-                                                onChange={(e) => setLocalConfig({ ...localConfig, security: { ...(localConfig.security || { rateLimitWindowMs: 3600000, blockedIps: [], rateLimitMax: 5 }), rateLimitMax: parseInt(e.target.value) } })}
-                                                className="w-20 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 text-center font-bold"
-                                            />
-                                        </div>
-                                        <div className="flex justify-between items-center">
-                                            <label className="text-sm font-bold text-gray-700">Time Window (ms)</label>
-                                            <input
-                                                type="number"
-                                                value={localConfig.security?.rateLimitWindowMs || 3600000}
-                                                onChange={(e) => setLocalConfig({ ...localConfig, security: { ...(localConfig.security || { rateLimitMax: 5, blockedIps: [], rateLimitWindowMs: 3600000 }), rateLimitWindowMs: parseInt(e.target.value) } })}
-                                                className="w-24 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 text-center font-bold"
-                                            />
-                                        </div>
-                                        <p className="mt-4 text-[10px] text-gray-400">
-                                            Limits {localConfig.security?.rateLimitMax || 5} wishes per {((localConfig.security?.rateLimitWindowMs || 3600000) / 60000).toFixed(0)} minutes per IP.
-                                        </p>
+                {
+                    activeTab === 'SECURITY' && localConfig && (
+                        <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
+                            <section className="bg-white/60 backdrop-blur-md rounded-[2.5rem] p-8 shadow-xl border border-white/50">
+                                <div className="flex items-center justify-between mb-6">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-red-100 rounded-lg text-red-700"><Shield size={18} /></div>
+                                        <h2 className="text-xl font-serif italic text-gray-900">Security Checks</h2>
                                     </div>
+                                    <button
+                                        onClick={() => handleClearLogs('security')}
+                                        className="bg-white text-gray-500 hover:text-red-500 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider border border-gray-200 hover:border-red-200 transition-all"
+                                    >
+                                        Clear Audit Logs
+                                    </button>
                                 </div>
 
-                                {/* COMPONENT: BLOCKLIST */}
-                                <div className="space-y-4">
-                                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">IP Blocklist</h3>
-                                    <div className="bg-white p-4 rounded-2xl border border-gray-200 min-h-[160px] flex flex-col">
-                                        <div className="flex gap-2 mb-4">
-                                            <input
-                                                type="text"
-                                                placeholder="Enter IP (e.g. 192.168.1.1)"
-                                                id="ip-input"
-                                                className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:ring-1 focus:ring-gray-900 outline-none"
-                                            />
-                                            <button
-                                                onClick={() => {
-                                                    const input = document.getElementById('ip-input') as HTMLInputElement
-                                                    if (input.value) {
-                                                        const current = localConfig.security?.blockedIps || []
-                                                        if (!current.includes(input.value)) {
-                                                            const newBlocked = [...current, input.value]
-                                                            setLocalConfig({ ...localConfig, security: { ...(localConfig.security || { rateLimitMax: 5, rateLimitWindowMs: 3600000, blockedIps: [] }), blockedIps: newBlocked } })
-                                                        }
-                                                        input.value = ""
-                                                    }
-                                                }}
-                                                className="bg-red-500 text-white px-3 rounded-lg font-bold text-xs uppercase hover:bg-red-600 transition"
-                                            >
-                                                Block
-                                            </button>
-                                        </div>
-                                        <div className="space-y-2 flex-1 overflow-y-auto max-h-40 scrollbar-thin scrollbar-thumb-gray-200">
-                                            {(localConfig.security?.blockedIps || []).length === 0 && <p className="text-xs text-gray-400 italic text-center py-4">No blocked IPs.</p>}
-                                            {localConfig.security?.blockedIps?.map((ip, i) => (
-                                                <div key={i} className="flex justify-between items-center bg-gray-50 px-3 py-2 rounded-lg">
-                                                    <span className="font-mono text-xs text-red-600 font-bold">{ip}</span>
-                                                    <button
-                                                        onClick={() => {
-                                                            const newBlocked = localConfig.security!.blockedIps!.filter((_, idx) => idx !== i)
-                                                            setLocalConfig({ ...localConfig, security: { ...localConfig.security!, blockedIps: newBlocked } })
-                                                        }}
-                                                        className="text-gray-400 hover:text-red-500 transition-colors"
-                                                    >
-                                                        <Trash2 size={12} />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </section>
-                    </div>
-                )}
-
-                {/* CONFIG CONFIG TAB */}
-                {activeTab === 'CONFIG' && localConfig && (
-                    <div className="max-w-4xl mx-auto space-y-12 animate-fade-in">
-                        {/* INTRO SEQUENCE */}
-                        <section className="bg-white/60 backdrop-blur-md rounded-[2.5rem] p-8 md:p-12 shadow-xl border border-white/50">
-                            <div className="flex items-center gap-4 mb-10">
-                                <div className="p-3 bg-gray-900 rounded-xl text-white shadow-lg">
-                                    <List size={20} />
-                                </div>
-                                <h2 className="text-3xl font-serif italic text-gray-900">Intro Sequence</h2>
-                            </div>
-
-                            <div className="space-y-8 pl-6 border-l-[3px] border-gray-200 relative">
-                                {localConfig.introSequence.map((step, i) => (
-                                    <div key={i} className="relative group bg-white/80 p-6 rounded-2xl shadow-sm border border-gray-100 transition-all hover:shadow-md hover:border-gray-300">
-                                        <div className="absolute -left-[35px] top-10 w-5 h-5 rounded-full bg-white border-[4px] border-gray-900 z-10 shadow-sm"></div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-8 items-start">
-                                            <div className="space-y-3">
-                                                <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Text Content</label>
-                                                <textarea
-                                                    value={step.text}
-                                                    onChange={(e) => handleIntroChange(i, 'text', e.target.value)}
-                                                    className="w-full text-xl font-medium bg-transparent border-0 border-b-2 border-gray-200 focus:border-gray-900 focus:ring-0 p-0 py-2 resize-none transition-colors text-gray-900 placeholder:text-gray-300"
-                                                    rows={1}
-                                                    placeholder="Enter text..."
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    {/* COMPONENT: RATE LIMITS */}
+                                    <div className="space-y-4">
+                                        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Rate Limiting</h3>
+                                        <div className="bg-white p-4 rounded-2xl border border-gray-200">
+                                            <div className="flex justify-between items-center mb-4">
+                                                <label className="text-sm font-bold text-gray-700">Max Wishes</label>
+                                                <input
+                                                    type="number"
+                                                    value={localConfig.security?.rateLimitMax || 5}
+                                                    onChange={(e) => setLocalConfig({ ...localConfig, security: { ...(localConfig.security || { rateLimitWindowMs: 3600000, blockedIps: [], rateLimitMax: 5 }), rateLimitMax: parseInt(e.target.value) } })}
+                                                    className="w-20 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 text-center font-bold"
                                                 />
                                             </div>
-
-                                            <div className="grid grid-cols-2 gap-4 w-full md:w-auto bg-gray-50 p-4 rounded-xl border border-gray-100">
-                                                <div className="space-y-1 text-center">
-                                                    <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider block">Fade</label>
-                                                    <input
-                                                        type="number" step="0.1"
-                                                        value={step.duration}
-                                                        onChange={(e) => handleIntroChange(i, 'duration', parseFloat(e.target.value))}
-                                                        className="w-16 bg-white rounded-lg px-2 py-1 text-center font-bold text-gray-900 border border-gray-200 focus:border-gray-900 outline-none"
-                                                    />
-                                                </div>
-                                                <div className="space-y-1 text-center">
-                                                    <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider block">Hold</label>
-                                                    <input
-                                                        type="number" step="0.1"
-                                                        value={step.hold}
-                                                        onChange={(e) => handleIntroChange(i, 'hold', parseFloat(e.target.value))}
-                                                        className="w-16 bg-white rounded-lg px-2 py-1 text-center font-bold text-gray-900 border border-gray-200 focus:border-gray-900 outline-none"
-                                                    />
-                                                </div>
+                                            <div className="flex justify-between items-center">
+                                                <label className="text-sm font-bold text-gray-700">Time Window (ms)</label>
+                                                <input
+                                                    type="number"
+                                                    value={localConfig.security?.rateLimitWindowMs || 3600000}
+                                                    onChange={(e) => setLocalConfig({ ...localConfig, security: { ...(localConfig.security || { rateLimitMax: 5, blockedIps: [], rateLimitWindowMs: 3600000 }), rateLimitWindowMs: parseInt(e.target.value) } })}
+                                                    className="w-24 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 text-center font-bold"
+                                                />
                                             </div>
+                                            <p className="mt-4 text-[10px] text-gray-400">
+                                                Limits {localConfig.security?.rateLimitMax || 5} wishes per {((localConfig.security?.rateLimitWindowMs || 3600000) / 60000).toFixed(0)} minutes per IP.
+                                            </p>
+                                        </div>
+                                    </div>
 
-                                            <div className="flex items-center gap-2 mt-2">
+                                    {/* COMPONENT: BLOCKLIST */}
+                                    <div className="space-y-4">
+                                        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">IP Blocklist</h3>
+                                        <div className="bg-white p-4 rounded-2xl border border-gray-200 min-h-[160px] flex flex-col">
+                                            <div className="flex gap-2 mb-4">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Enter IP (e.g. 192.168.1.1)"
+                                                    id="ip-input"
+                                                    className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:ring-1 focus:ring-gray-900 outline-none"
+                                                />
                                                 <button
-                                                    onClick={() => handleIntroChange(i, 'highlight', !step.highlight)}
-                                                    className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border transition-all ${step.highlight
-                                                        ? 'bg-gray-900 text-white border-gray-900'
-                                                        : 'bg-white text-gray-400 border-gray-200 hover:border-gray-400'}`}
+                                                    onClick={() => {
+                                                        const input = document.getElementById('ip-input') as HTMLInputElement
+                                                        if (input.value) {
+                                                            const current = localConfig.security?.blockedIps || []
+                                                            if (!current.includes(input.value)) {
+                                                                const newBlocked = [...current, input.value]
+                                                                setLocalConfig({ ...localConfig, security: { ...(localConfig.security || { rateLimitMax: 5, rateLimitWindowMs: 3600000, blockedIps: [] }), blockedIps: newBlocked } })
+                                                            }
+                                                            input.value = ""
+                                                        }
+                                                    }}
+                                                    className="bg-red-500 text-white px-3 rounded-lg font-bold text-xs uppercase hover:bg-red-600 transition"
                                                 >
-                                                    {step.highlight ? '★ Hero Style' : 'Normal Style'}
+                                                    Block
                                                 </button>
                                             </div>
-                                        </div>
-
-                                        <button
-                                            onClick={() => removeIntroStep(i)}
-                                            className="absolute -top-3 -right-3 bg-white text-gray-400 hover:text-red-500 shadow-md border border-gray-100 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all scale-90 hover:scale-100"
-                                            title="Remove Step"
-                                        >
-                                            <Trash2 size={14} />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <button
-                                onClick={addIntroStep}
-                                className="ml-6 mt-8 flex items-center gap-2 text-sm font-bold text-gray-600 bg-white border border-gray-200 px-6 py-3 rounded-xl hover:bg-gray-900 hover:text-white hover:border-gray-900 transition-all shadow-sm"
-                            >
-                                <Plus size={16} /> Add Step
-                            </button>
-                        </section>
-
-                        {/* OTHER SETTINGS GRID */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <section className="bg-white/60 backdrop-blur-sm rounded-[2.5rem] p-8 shadow-lg border border-white/50">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <div className="p-2 bg-gray-200 rounded-lg text-gray-700"><Type size={18} /></div>
-                                    <h2 className="text-xl font-serif italic text-gray-900">Instructions</h2>
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-3">Void Mode Label</label>
-                                    <input
-                                        type="text"
-                                        value={localConfig.instructions.void}
-                                        onChange={(e) => setLocalConfig({ ...localConfig, instructions: { ...localConfig.instructions, void: e.target.value } })}
-                                        className="w-full text-base p-4 bg-white rounded-xl border border-gray-200 focus:border-gray-900 outline-none transition-all shadow-sm font-medium text-gray-800"
-                                    />
-                                </div>
-                                <div className="mt-6">
-                                    <label className="block text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-3">Wish Input Placeholder</label>
-                                    <input
-                                        type="text"
-                                        value={localConfig.instructions.wishPlaceholder}
-                                        onChange={(e) => setLocalConfig({ ...localConfig, instructions: { ...localConfig.instructions, wishPlaceholder: e.target.value } })}
-                                        className="w-full text-base p-4 bg-white rounded-xl border border-gray-200 focus:border-gray-900 outline-none transition-all shadow-sm font-medium text-gray-800"
-                                    />
-                                </div>
-                            </section>
-
-                            <section className="bg-white/60 backdrop-blur-sm rounded-[2.5rem] p-8 shadow-lg border border-white/50">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <div className="p-2 bg-gray-200 rounded-lg text-gray-700"><Clock size={18} /></div>
-                                    <h2 className="text-xl font-serif italic text-gray-900">Global Timings</h2>
-                                </div>
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-gray-100">
-                                        <label className="text-sm font-bold text-gray-500 uppercase tracking-wide">Release Delay</label>
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                type="number"
-                                                value={localConfig.appTimings.releaseDelay}
-                                                onChange={(e) => setLocalConfig({ ...localConfig, appTimings: { ...localConfig.appTimings, releaseDelay: parseInt(e.target.value) } })}
-                                                className="w-20 bg-gray-50 rounded-lg px-2 py-1 text-right font-mono font-bold text-gray-900 outline-none focus:bg-white focus:ring-1 ring-gray-200"
-                                            />
-                                            <span className="text-xs text-gray-400">ms</span>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-gray-100">
-                                        <label className="text-sm font-bold text-gray-500 uppercase tracking-wide">Settling Time</label>
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                type="number"
-                                                value={localConfig.appTimings.settleTime}
-                                                onChange={(e) => setLocalConfig({ ...localConfig, appTimings: { ...localConfig.appTimings, settleTime: parseInt(e.target.value) } })}
-                                                className="w-20 bg-gray-50 rounded-lg px-2 py-1 text-right font-mono font-bold text-gray-900 outline-none focus:bg-white focus:ring-1 ring-gray-200"
-                                            />
-                                            <span className="text-xs text-gray-400">ms</span>
+                                            <div className="space-y-2 flex-1 overflow-y-auto max-h-40 scrollbar-thin scrollbar-thumb-gray-200">
+                                                {(localConfig.security?.blockedIps || []).length === 0 && <p className="text-xs text-gray-400 italic text-center py-4">No blocked IPs.</p>}
+                                                {localConfig.security?.blockedIps?.map((ip, i) => (
+                                                    <div key={i} className="flex justify-between items-center bg-gray-50 px-3 py-2 rounded-lg">
+                                                        <span className="font-mono text-xs text-red-600 font-bold">{ip}</span>
+                                                        <button
+                                                            onClick={() => {
+                                                                const newBlocked = localConfig.security!.blockedIps!.filter((_, idx) => idx !== i)
+                                                                setLocalConfig({ ...localConfig, security: { ...localConfig.security!, blockedIps: newBlocked } })
+                                                            }}
+                                                            className="text-gray-400 hover:text-red-500 transition-colors"
+                                                        >
+                                                            <Trash2 size={12} />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </section>
+                        </div>
+                    )
+                }
 
-                            <section className="col-span-1 md:col-span-2 bg-white/60 backdrop-blur-sm rounded-[2.5rem] p-8 shadow-lg border border-white/50">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <div className="p-2 bg-gray-200 rounded-lg text-gray-700"><Palette size={18} /></div>
-                                    <h2 className="text-xl font-serif italic text-gray-900">Emotional Palette</h2>
+                {/* CONFIG CONFIG TAB */}
+                {
+                    activeTab === 'CONFIG' && localConfig && (
+                        <div className="max-w-4xl mx-auto space-y-12 animate-fade-in">
+                            {/* INTRO SEQUENCE */}
+                            <section className="bg-white/60 backdrop-blur-md rounded-[2.5rem] p-8 md:p-12 shadow-xl border border-white/50">
+                                <div className="flex items-center gap-4 mb-10">
+                                    <div className="p-3 bg-gray-900 rounded-xl text-white shadow-lg">
+                                        <List size={20} />
+                                    </div>
+                                    <h2 className="text-3xl font-serif italic text-gray-900">Intro Sequence</h2>
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                    {localConfig.craneColors?.map((colorItem, index) => (
-                                        <div key={colorItem.id} className="bg-white p-4 rounded-xl border border-gray-100 flex flex-col gap-3">
-                                            <div className="flex items-center gap-3">
-                                                <div
-                                                    className="w-10 h-10 rounded-full border border-gray-200 shadow-sm"
-                                                    style={{ backgroundColor: colorItem.color }}
-                                                />
+
+                                <div className="space-y-8 pl-6 border-l-[3px] border-gray-200 relative">
+                                    {localConfig.introSequence.map((step, i) => (
+                                        <div key={i} className="relative group bg-white/80 p-6 rounded-2xl shadow-sm border border-gray-100 transition-all hover:shadow-md hover:border-gray-300">
+                                            <div className="absolute -left-[35px] top-10 w-5 h-5 rounded-full bg-white border-[4px] border-gray-900 z-10 shadow-sm"></div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-8 items-start">
+                                                <div className="space-y-3">
+                                                    <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Text Content</label>
+                                                    <textarea
+                                                        value={step.text}
+                                                        onChange={(e) => handleIntroChange(i, 'text', e.target.value)}
+                                                        className="w-full text-xl font-medium bg-transparent border-0 border-b-2 border-gray-200 focus:border-gray-900 focus:ring-0 p-0 py-2 resize-none transition-colors text-gray-900 placeholder:text-gray-300"
+                                                        rows={1}
+                                                        placeholder="Enter text..."
+                                                    />
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-4 w-full md:w-auto bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                                    <div className="space-y-1 text-center">
+                                                        <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider block">Fade</label>
+                                                        <input
+                                                            type="number" step="0.1"
+                                                            value={step.duration}
+                                                            onChange={(e) => handleIntroChange(i, 'duration', parseFloat(e.target.value))}
+                                                            className="w-16 bg-white rounded-lg px-2 py-1 text-center font-bold text-gray-900 border border-gray-200 focus:border-gray-900 outline-none"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-1 text-center">
+                                                        <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider block">Hold</label>
+                                                        <input
+                                                            type="number" step="0.1"
+                                                            value={step.hold}
+                                                            onChange={(e) => handleIntroChange(i, 'hold', parseFloat(e.target.value))}
+                                                            className="w-16 bg-white rounded-lg px-2 py-1 text-center font-bold text-gray-900 border border-gray-200 focus:border-gray-900 outline-none"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-2 mt-2">
+                                                    <button
+                                                        onClick={() => handleIntroChange(i, 'highlight', !step.highlight)}
+                                                        className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border transition-all ${step.highlight
+                                                            ? 'bg-gray-900 text-white border-gray-900'
+                                                            : 'bg-white text-gray-400 border-gray-200 hover:border-gray-400'}`}
+                                                    >
+                                                        {step.highlight ? '★ Hero Style' : 'Normal Style'}
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                onClick={() => removeIntroStep(i)}
+                                                className="absolute -top-3 -right-3 bg-white text-gray-400 hover:text-red-500 shadow-md border border-gray-100 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all scale-90 hover:scale-100"
+                                                title="Remove Step"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <button
+                                    onClick={addIntroStep}
+                                    className="ml-6 mt-8 flex items-center gap-2 text-sm font-bold text-gray-600 bg-white border border-gray-200 px-6 py-3 rounded-xl hover:bg-gray-900 hover:text-white hover:border-gray-900 transition-all shadow-sm"
+                                >
+                                    <Plus size={16} /> Add Step
+                                </button>
+                            </section>
+
+                            {/* OTHER SETTINGS GRID */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <section className="bg-white/60 backdrop-blur-sm rounded-[2.5rem] p-8 shadow-lg border border-white/50">
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="p-2 bg-gray-200 rounded-lg text-gray-700"><Type size={18} /></div>
+                                        <h2 className="text-xl font-serif italic text-gray-900">Instructions</h2>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-3">Void Mode Label</label>
+                                        <input
+                                            type="text"
+                                            value={localConfig.instructions.void}
+                                            onChange={(e) => setLocalConfig({ ...localConfig, instructions: { ...localConfig.instructions, void: e.target.value } })}
+                                            className="w-full text-base p-4 bg-white rounded-xl border border-gray-200 focus:border-gray-900 outline-none transition-all shadow-sm font-medium text-gray-800"
+                                        />
+                                    </div>
+                                    <div className="mt-6">
+                                        <label className="block text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-3">Wish Input Placeholder</label>
+                                        <input
+                                            type="text"
+                                            value={localConfig.instructions.wishPlaceholder}
+                                            onChange={(e) => setLocalConfig({ ...localConfig, instructions: { ...localConfig.instructions, wishPlaceholder: e.target.value } })}
+                                            className="w-full text-base p-4 bg-white rounded-xl border border-gray-200 focus:border-gray-900 outline-none transition-all shadow-sm font-medium text-gray-800"
+                                        />
+                                    </div>
+                                </section>
+
+                                <section className="bg-white/60 backdrop-blur-sm rounded-[2.5rem] p-8 shadow-lg border border-white/50">
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="p-2 bg-gray-200 rounded-lg text-gray-700"><Clock size={18} /></div>
+                                        <h2 className="text-xl font-serif italic text-gray-900">Global Timings</h2>
+                                    </div>
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-gray-100">
+                                            <label className="text-sm font-bold text-gray-500 uppercase tracking-wide">Release Delay</label>
+                                            <div className="flex items-center gap-2">
                                                 <input
-                                                    type="color"
-                                                    value={colorItem.color}
-                                                    onChange={(e) => {
-                                                        const newColors = [...(localConfig.craneColors || [])]
-                                                        newColors[index] = { ...newColors[index], color: e.target.value }
-                                                        setLocalConfig({ ...localConfig, craneColors: newColors })
-                                                    }}
-                                                    className="w-8 h-8 cursor-pointer opacity-0 absolute"
-                                                    style={{ width: '40px', height: '40px' }}
+                                                    type="number"
+                                                    value={localConfig.appTimings.releaseDelay}
+                                                    onChange={(e) => setLocalConfig({ ...localConfig, appTimings: { ...localConfig.appTimings, releaseDelay: parseInt(e.target.value) } })}
+                                                    className="w-20 bg-gray-50 rounded-lg px-2 py-1 text-right font-mono font-bold text-gray-900 outline-none focus:bg-white focus:ring-1 ring-gray-200"
                                                 />
-                                                <div className="flex flex-col">
-                                                    <span className="text-[10px] uppercase font-bold text-gray-400">Color Hex</span>
+                                                <span className="text-xs text-gray-400">ms</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-gray-100">
+                                            <label className="text-sm font-bold text-gray-500 uppercase tracking-wide">Settling Time</label>
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    type="number"
+                                                    value={localConfig.appTimings.settleTime}
+                                                    onChange={(e) => setLocalConfig({ ...localConfig, appTimings: { ...localConfig.appTimings, settleTime: parseInt(e.target.value) } })}
+                                                    className="w-20 bg-gray-50 rounded-lg px-2 py-1 text-right font-mono font-bold text-gray-900 outline-none focus:bg-white focus:ring-1 ring-gray-200"
+                                                />
+                                                <span className="text-xs text-gray-400">ms</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section className="col-span-1 md:col-span-2 bg-white/60 backdrop-blur-sm rounded-[2.5rem] p-8 shadow-lg border border-white/50">
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="p-2 bg-gray-200 rounded-lg text-gray-700"><Palette size={18} /></div>
+                                        <h2 className="text-xl font-serif italic text-gray-900">Emotional Palette</h2>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                        {localConfig.craneColors?.map((colorItem, index) => (
+                                            <div key={colorItem.id} className="bg-white p-4 rounded-xl border border-gray-100 flex flex-col gap-3">
+                                                <div className="flex items-center gap-3">
+                                                    <div
+                                                        className="w-10 h-10 rounded-full border border-gray-200 shadow-sm"
+                                                        style={{ backgroundColor: colorItem.color }}
+                                                    />
                                                     <input
-                                                        type="text"
+                                                        type="color"
                                                         value={colorItem.color}
                                                         onChange={(e) => {
                                                             const newColors = [...(localConfig.craneColors || [])]
                                                             newColors[index] = { ...newColors[index], color: e.target.value }
                                                             setLocalConfig({ ...localConfig, craneColors: newColors })
                                                         }}
-                                                        className="font-mono text-xs font-bold text-gray-800 outline-none w-20"
+                                                        className="w-8 h-8 cursor-pointer opacity-0 absolute"
+                                                        style={{ width: '40px', height: '40px' }}
+                                                    />
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[10px] uppercase font-bold text-gray-400">Color Hex</span>
+                                                        <input
+                                                            type="text"
+                                                            value={colorItem.color}
+                                                            onChange={(e) => {
+                                                                const newColors = [...(localConfig.craneColors || [])]
+                                                                newColors[index] = { ...newColors[index], color: e.target.value }
+                                                                setLocalConfig({ ...localConfig, craneColors: newColors })
+                                                            }}
+                                                            className="font-mono text-xs font-bold text-gray-800 outline-none w-20"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col gap-1">
+                                                    <label className="text-[10px] uppercase font-bold text-gray-400">Meaning</label>
+                                                    <input
+                                                        type="text"
+                                                        value={colorItem.label}
+                                                        onChange={(e) => {
+                                                            const newColors = [...(localConfig.craneColors || [])]
+                                                            newColors[index] = { ...newColors[index], label: e.target.value }
+                                                            setLocalConfig({ ...localConfig, craneColors: newColors })
+                                                        }}
+                                                        className="w-full text-sm font-medium text-gray-900 border-b border-gray-200 focus:border-gray-900 outline-none py-1 transition-colors"
+                                                        placeholder="Label (e.g. Unsent)"
+                                                    />
+                                                </div>
+                                                <div className="flex flex-col gap-1">
+                                                    <label className="text-[10px] uppercase font-bold text-gray-400">Placeholder Hint</label>
+                                                    <input
+                                                        type="text"
+                                                        value={colorItem.placeholder || ''}
+                                                        onChange={(e) => {
+                                                            const newColors = [...(localConfig.craneColors || [])]
+                                                            newColors[index] = { ...newColors[index], placeholder: e.target.value }
+                                                            setLocalConfig({ ...localConfig, craneColors: newColors })
+                                                        }}
+                                                        className="w-full text-sm font-medium text-gray-500 border-b border-gray-200 focus:border-gray-900 outline-none py-1 transition-colors italic"
+                                                        placeholder="Custom placeholder..."
                                                     />
                                                 </div>
                                             </div>
-                                            <div className="flex flex-col gap-1">
-                                                <label className="text-[10px] uppercase font-bold text-gray-400">Meaning</label>
-                                                <input
-                                                    type="text"
-                                                    value={colorItem.label}
-                                                    onChange={(e) => {
-                                                        const newColors = [...(localConfig.craneColors || [])]
-                                                        newColors[index] = { ...newColors[index], label: e.target.value }
-                                                        setLocalConfig({ ...localConfig, craneColors: newColors })
-                                                    }}
-                                                    className="w-full text-sm font-medium text-gray-900 border-b border-gray-200 focus:border-gray-900 outline-none py-1 transition-colors"
-                                                    placeholder="Label (e.g. Unsent)"
-                                                />
-                                            </div>
-                                            <div className="flex flex-col gap-1">
-                                                <label className="text-[10px] uppercase font-bold text-gray-400">Placeholder Hint</label>
-                                                <input
-                                                    type="text"
-                                                    value={colorItem.placeholder || ''}
-                                                    onChange={(e) => {
-                                                        const newColors = [...(localConfig.craneColors || [])]
-                                                        newColors[index] = { ...newColors[index], placeholder: e.target.value }
-                                                        setLocalConfig({ ...localConfig, craneColors: newColors })
-                                                    }}
-                                                    className="w-full text-sm font-medium text-gray-500 border-b border-gray-200 focus:border-gray-900 outline-none py-1 transition-colors italic"
-                                                    placeholder="Custom placeholder..."
-                                                />
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </section>
-                        </div>
+                                        ))}
+                                    </div>
+                                </section>
+                            </div>
 
-                    </div>
-                )}
-            </main>
+                        </div>
+                    )
+                }
+            </main >
 
             {/* FLOATING SAVE BUTTON */}
-            {activeTab === 'CONFIG' && (
-                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-4 pointer-events-none">
-                    <button
-                        onClick={handleSaveConfig}
-                        disabled={saveStatus === 'SAVING' || saveStatus === 'SAVED'}
-                        className={cn(
-                            "pointer-events-auto w-full flex items-center justify-center gap-3 py-4 rounded-2xl shadow-2xl font-bold tracking-widest uppercase transition-all duration-300 transform hover:-translate-y-1 active:scale-95 border border-white/20 backdrop-blur-lg",
-                            saveStatus === 'SAVED' ? "bg-emerald-500 text-white shadow-emerald-500/30" : "bg-gray-900 text-white shadow-gray-900/30 hover:bg-black",
-                            saveStatus === 'ERROR' ? "bg-red-500 shadow-red-500/30" : ""
-                        )}
-                    >
-                        {saveStatus === 'SAVING' && <span className="animate-spin text-lg">⟳</span>}
-                        {saveStatus === 'SAVED' ? 'Changes Live!' : 'Publish Changes'}
-                    </button>
-                </div>
-            )}
-        </div>
+            {
+                activeTab === 'CONFIG' && (
+                    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-4 pointer-events-none">
+                        <button
+                            onClick={handleSaveConfig}
+                            disabled={saveStatus === 'SAVING' || saveStatus === 'SAVED'}
+                            className={cn(
+                                "pointer-events-auto w-full flex items-center justify-center gap-3 py-4 rounded-2xl shadow-2xl font-bold tracking-widest uppercase transition-all duration-300 transform hover:-translate-y-1 active:scale-95 border border-white/20 backdrop-blur-lg",
+                                saveStatus === 'SAVED' ? "bg-emerald-500 text-white shadow-emerald-500/30" : "bg-gray-900 text-white shadow-gray-900/30 hover:bg-black",
+                                saveStatus === 'ERROR' ? "bg-red-500 shadow-red-500/30" : ""
+                            )}
+                        >
+                            {saveStatus === 'SAVING' && <span className="animate-spin text-lg">⟳</span>}
+                            {saveStatus === 'SAVED' ? 'Changes Live!' : 'Publish Changes'}
+                        </button>
+                    </div>
+                )
+            }
+        </div >
     )
 }

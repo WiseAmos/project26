@@ -90,12 +90,12 @@ export default function WishInput({ onSend, onColorChange, selectedColor }: Wish
                         onFocus={() => setHasInteracted(true)}
                         onKeyDown={handleKeyDown}
                         placeholder={fullPlaceholder}
-                        className="w-full bg-transparent text-[#333] text-center font-serif text-xl md:text-2xl placeholder:text-[#333]/30 outline-none border-none focus:ring-0 transition-all duration-700 p-4"
+                        className="w-full bg-transparent text-[#333] text-center font-serif text-xl md:text-2xl placeholder:text-[#333]/40 outline-none border-none focus:ring-0 transition-all duration-700 p-4"
                         autoComplete="off"
                     />
                 </div>
-                <p className={`mt-1 text-[10px] tracking-[0.2em] uppercase text-[#333]/30 transition-opacity duration-700 ${message.trim().length > 0 ? 'opacity-100' : 'opacity-0'}`}>
-                    Press Enter to Release
+                <p className={`mt-1 text-[10px] tracking-[0.2em] uppercase text-[#333]/50 transition-opacity duration-700 ${message.trim().length > 0 ? 'opacity-100' : 'opacity-80'}`}>
+                    {message.trim().length > 0 ? 'Press Enter to Release' : 'Tap above to write'}
                 </p>
             </div>
 

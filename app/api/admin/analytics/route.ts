@@ -34,9 +34,12 @@ export async function GET(request: Request) {
 
         // 3. Aggregation for Map (Country counts)
         const countryCounts: Record<string, number> = {}
+        const uniqueIps = new Set<string>()
+
         visits.forEach((v: any) => {
             const country = v.country || 'Unknown'
             countryCounts[country] = (countryCounts[country] || 0) + 1
+            if (v.ip) uniqueIps.add(v.ip)
         })
 
         const mapData = Object.entries(countryCounts).map(([name, count]) => ({ name, count }))
@@ -44,7 +47,8 @@ export async function GET(request: Request) {
         return NextResponse.json({
             recentVisits: visits.slice(0, 50), // Send top 50 for table
             mapData, // Send aggregated data for map
-            totalVisits: visits.length // Detailed count of fetched sample
+            totalVisits: visits.length, // Detailed count of fetched sample
+            uniqueVisitors: uniqueIps.size // Count of distinct IPs
         })
     } catch (error) {
         console.error('Analytics Fetch Error:', error)
