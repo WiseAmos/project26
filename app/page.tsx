@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Scene from '@/components/Scene'
 import IntroOverlay from '@/components/IntroOverlay'
 import WishInput from '@/components/WishInput'
+import FadingText from '@/components/FadingText'
 import { db } from '@/lib/firebase'
 import { useConfig } from '@/components/ConfigContext'
 
@@ -336,28 +337,4 @@ export default function Home() {
   )
 }
 
-// Helper Component for Fading Text
-function FadingText({ text }: { text: string }) {
-  const [display, setDisplay] = useState(text)
-  const [opacity, setOpacity] = useState(1)
 
-  useEffect(() => {
-    if (text !== display) {
-      setOpacity(0) // Fade out
-      const timer = setTimeout(() => {
-        setDisplay(text)
-        setOpacity(1) // Fade in
-      }, 300) // 300ms matches standard transition duration
-      return () => clearTimeout(timer)
-    }
-  }, [text, display])
-
-  return (
-    <span
-      className="transition-opacity duration-500 ease-in-out block"
-      style={{ opacity }}
-    >
-      {display}
-    </span>
-  )
-}

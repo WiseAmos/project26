@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useConfig } from './ConfigContext'
+import FadingText from './FadingText'
 
 interface WishInputProps {
     onSend: (message: string) => void
@@ -95,7 +96,7 @@ export default function WishInput({ onSend, onColorChange, selectedColor }: Wish
                     />
                 </div>
                 <p className={`mt-1 text-[10px] tracking-[0.2em] uppercase text-[#333]/50 transition-opacity duration-700 ${message.trim().length > 0 ? 'opacity-100' : 'opacity-80'}`}>
-                    {message.trim().length > 0 ? 'Press Enter to Release' : 'Tap above to write'}
+                    <FadingText text={message.trim().length > 0 ? 'Press Enter to Release' : 'Tap above to write'} />
                 </p>
             </div>
 
