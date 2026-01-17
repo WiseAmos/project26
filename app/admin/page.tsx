@@ -93,7 +93,7 @@ export default function AdminPage() {
     const [wishes, setWishes] = useState<{ id: string, message: string, timestamp: number }[]>([])
 
     // Analytics Data
-    const [analyticsData, setAnalyticsData] = useState<{ recentVisits: any[], mapData: any[], totalVisits: number } | null>(null)
+    const [analyticsData, setAnalyticsData] = useState<{ recentVisits: any[], mapData: any[], totalVisits: number, uniqueVisitors: number } | null>(null)
     const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false)
 
     // Bulk Import Modal
